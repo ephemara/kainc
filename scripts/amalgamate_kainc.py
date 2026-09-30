@@ -32,7 +32,6 @@ ORDER = [
     "src/parser/parser.kn",
     "src/typecheck/monomorphize.kn",
     "src/codegen/llvm_ffi.kn",
-    "src/codegen/llvm_stub_types.kn",
     "src/jit/jit_metal.kn",
     "src/jit/jit_x86.kn",
     "src/jit/jit_orc.kn",

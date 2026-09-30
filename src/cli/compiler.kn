@@ -12,89 +12,6 @@ use std::fs
 // Local type mirrors (standalone check compatibility)
 // ═══════════════════════════════════════════════════════════════════
 
-pub struct KcDiagnostic:
-    severity:    Int
-    file_path:   String
-    line_no:     Int
-    column:      Int
-    message:     String
-    error_kind:  String
-    span_start:  Int
-    span_end:    Int
-
-pub struct KcDiagnosticBag:
-    errors:   Array<KcDiagnostic>
-    warnings: Array<KcDiagnostic>
-    notes:    Array<KcDiagnostic>
-
-pub fn kc_diag_bag_new() -> KcDiagnosticBag:
-    return KcDiagnosticBag { errors: [], warnings: [], notes: [] }
-
-pub fn kc_diag_bag_has_errors(bag: KcDiagnosticBag) -> Bool:
-    return len(bag.errors) > 0
-
-pub struct KcToken:
-    kind:    Int
-    text:    String
-    line_no: Int
-    col_no:  Int
-
-pub struct AstNode:
-    kind:       Int
-    span_start: Int
-    span_end:   Int
-    data:       Array<Int>
-
-pub struct AstProgram:
-    root:  Int
-    nodes: Array<AstNode>
-
-pub fn ast_data_len(node: AstNode) -> Int:
-    return len(node.data)
-
-pub fn ast_data_get(node: AstNode, index: Int) -> Int:
-    if index < 0 or index >= len(node.data):
-        return -1
-    return node.data[index]
-
-pub struct ResolvedType:
-    kind:          Int
-    int_size:      Int
-    float_size:    Int
-    name:          Int
-    inner_type:    Int
-    array_len:     Int
-    tuple_types:   Int
-    tuple_len:     Int
-    result_ok:     Int
-    result_err:    Int
-    fn_params:     Int
-    fn_param_count: Int
-    fn_ret:        Int
-    fn_effects:    Int
-    ref_mut:       Bool
-
-pub struct TypedItem:
-    kind:          Int
-    name:          String
-    name_idx:      Int
-    resolved_type: ResolvedType
-    ast_index:     Int
-    effects:       Int
-    field_names:   Array<Int>
-    field_types:   Array<ResolvedType>
-    fn_param_types: Array<ResolvedType>
-    fn_ret_type:    ResolvedType
-
-pub struct TypedProgram:
-    items:     Array<TypedItem>
-    errors:    KcDiagnosticBag
-    ast_nodes: Array<AstNode>
-
-pub struct MonomorphizedProgram:
-    items:       Array<TypedItem>
-    mangled_map: Array<String>
-
 pub struct BuildConfig:
     name:         String
     target:       String
@@ -124,55 +41,7 @@ pub fn build_config_default() -> BuildConfig:
 
 // ── Forward stub types for upstream modules ──
 
-pub struct KcLexerState:
-    source:    String
-    file_path: String
-
-pub struct KcLexTokensResult:
-    tokens: Array<KcToken>
-    errors: KcDiagnosticBag
-
-pub struct ParserState:
-    tokens:   Array<KcToken>
-    errors:   KcDiagnosticBag
-    prog:     AstProgram
-
-pub struct ProgResult:
-    state:   ParserState
-    program: AstProgram
-
-pub struct TypeEnv:
-    all_types: Array<ResolvedType>
-
 // ── Stub functions (resolved at ouroboros combine time) ──
-
-pub fn lexer_new(source: String, file_path: String) -> KcLexerState:
-    return KcLexerState { source: source, file_path: file_path }
-
-pub fn lexer_tokenize_all(state: KcLexerState) -> KcLexTokensResult:
-    return KcLexTokensResult { tokens: [], errors: kc_diag_bag_new() }
-
-pub fn parser_new(tokens: Array<KcToken>, file_path: String, source: String) -> ParserState:
-    return ParserState { tokens: tokens, errors: kc_diag_bag_new(),
-        prog: AstProgram { root: 0, nodes: [] } }
-
-pub fn parse(state: ParserState) -> ProgResult:
-    return ProgResult { state: state, program: state.prog }
-
-pub fn type_env_new() -> TypeEnv:
-    return TypeEnv { all_types: [] }
-
-pub fn typecheck(env: TypeEnv, prog: AstProgram) -> TypedProgram:
-    return TypedProgram { items: [], errors: kc_diag_bag_new(), ast_nodes: prog.nodes }
-
-pub fn monomorphize(typed: TypedProgram, env: TypeEnv) -> MonomorphizedProgram:
-    return MonomorphizedProgram { items: typed.items, mangled_map: [] }
-
-pub fn codegen_textual(prog: MonomorphizedProgram, triple: String, debug: Bool) -> String:
-    return "; stub\n"
-
-pub fn target_triple_for_platform() -> String:
-    return "x86_64-pc-windows-msvc"
 
 // ═══════════════════════════════════════════════════════════════════
 // Pipeline Phase Constants

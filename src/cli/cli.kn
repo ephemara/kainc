@@ -177,19 +177,18 @@ pub fn parse_args(args: Array<String>) -> CliConfig:
 
 // ── Helper: check if string starts with a given first character ──
 pub fn str_starts_with_char(s: String, start_idx: Int, ch: String) -> Bool:
+    // NOTE: s[i] string subscript segfaults at runtime in this snapshot;
+    // route through std::text helpers (TurboKain idiom).
     if len(s) <= start_idx:
         return false
-    return s[start_idx] == ch
+    let tail: String = text_substring_string(s, start_idx, len(s) - start_idx)
+    return text_starts_with_string(tail, ch)
 
 // ═══════════════════════════════════════════════════════════════════
 // run_subcommand — dispatch to the correct handler
 // ═══════════════════════════════════════════════════════════════════
 
 pub fn run_subcommand(config: CliConfig) -> Int with IO:
-    println("run_subcommand entered sub=" + str(config.subcommand))
-    // ── Init: load command registry at startup ──
-    init_command_registry()
-    println("registry ok")
 
     // ── Kn launcher: show quick-start menu if no subcommand ──
     if config.launcher_kind == LAUNCHER_KN and config.subcommand == 10:

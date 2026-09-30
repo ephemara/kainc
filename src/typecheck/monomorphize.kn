@@ -8,66 +8,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Effect Constants (local duplicates)
 // ═══════════════════════════════════════════════════════════════════
-const EFF_PURE:     Int = 0x00
-const EFF_UNSAFE:   Int = 0x10
-
-// ═══════════════════════════════════════════════════════════════════
-// AST Item/Expr Constants (local duplicates)
-// ═══════════════════════════════════════════════════════════════════
-const AST_ITEM_FUNCTION:  Int = 0
-const AST_ITEM_STRUCT:    Int = 1
-const AST_ITEM_ENUM:      Int = 2
-const AST_ITEM_CONST:     Int = 8
-const AST_EXPR_INT:       Int = 100
-const AST_EXPR_BOOL:      Int = 104
-const AST_EXPR_IDENT:     Int = 106
-const AST_EXPR_CALL:      Int = 109
-const AST_EXPR_STRUCT_LIT: Int = 118
-
-// ═══════════════════════════════════════════════════════════════════
-// ResolvedType kind constants (local duplicates)
-// ═══════════════════════════════════════════════════════════════════
-const RT_UNIT:     Int = 0
-const RT_BOOL:     Int = 1
-const RT_INT:      Int = 2
-const RT_FLOAT:    Int = 3
-const RT_STRING:   Int = 4
-const RT_CHAR:     Int = 5
-const RT_ARRAY:    Int = 6
-const RT_SLICE:    Int = 7
-const RT_TUPLE:    Int = 8
-const RT_REF:      Int = 9
-const RT_PTR:      Int = 10
-const RT_OPTION:   Int = 11
-const RT_RESULT:   Int = 12
-const RT_FUTURE:   Int = 13
-const RT_STRUCT:   Int = 14
-const RT_ENUM:     Int = 15
-const RT_FUNCTION: Int = 16
-const RT_GENERIC:  Int = 17
-const RT_NEVER:    Int = 18
-const RT_UNKNOWN:  Int = 19
-
-// ═══════════════════════════════════════════════════════════════════
-// ResolvedType struct (local duplicate)
-// ═══════════════════════════════════════════════════════════════════
-pub struct ResolvedType:
-    kind:          Int
-    int_size:      Int
-    float_size:    Int
-    name:          Int
-    inner_type:    Int
-    array_len:     Int
-    tuple_types:   Int
-    tuple_len:     Int
-    result_ok:     Int
-    result_err:    Int
-    fn_params:     Int
-    fn_param_count: Int
-    fn_ret:        Int
-    fn_effects:    Int
-    ref_mut:       Bool
-
 // ── Constructors ──
 pub fn mono_rt_zero() -> ResolvedType:
     return ResolvedType {
@@ -109,21 +49,6 @@ pub fn mono_rt_struct(name: Int) -> ResolvedType:
 // ═══════════════════════════════════════════════════════════════════
 // TypedItem (local duplicate)
 // ═══════════════════════════════════════════════════════════════════
-pub struct TypedItem:
-    kind:          Int
-    name:          String
-    name_idx:      Int
-    resolved_type: ResolvedType
-    ast_index:     Int
-    effects:       Int
-    field_names:   Array<Int>
-    field_types:   Array<ResolvedType>
-    fn_param_types: Array<ResolvedType>
-    fn_ret_type:    ResolvedType
-
-pub struct TypedProgram:
-    items:  Array<TypedItem>
-
 // ── Type lookup helper from flat array ──
 pub fn mono_type_get(types: Array<ResolvedType>, idx: Int) -> ResolvedType:
     if idx < 0 or idx >= len(types):

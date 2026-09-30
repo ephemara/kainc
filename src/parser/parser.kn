@@ -1703,7 +1703,7 @@ pub fn parse_primary(st: ParserState) -> ParseResult:
     // struct literal: StructName { ... }
     if kind == TOKEN_IDENT:
         let pk: Token = parser_peek(st, 1)
-        if pk.kind == TOKEN_LBRACE and text_char_at(text_from(tok.text), 0) >= "A" and text_char_at(text_from(tok.text), 0) <= "Z":
+        if pk.kind == TOKEN_LBRACE and char_at(tok.text, 0) >= "A" and char_at(tok.text, 0) <= "Z":
             return parse_struct_literal(st)
 
     // Unknown primary

@@ -24,50 +24,9 @@ use std::fmt
 // Local LLVM-C type aliases (Path B stubs — real in llvm_ffi.kn)
 // ═══════════════════════════════════════════════════════════════════
 
-pub type LLVMContextRef       = ptr<Byte>
-pub type LLVMModuleRef        = ptr<Byte>
-pub type LLVMBuilderRef       = ptr<Byte>
-pub type LLVMTypeRef          = ptr<Byte>
-pub type LLVMValueRef         = ptr<Byte>
-pub type LLVMBasicBlockRef    = ptr<Byte>
-
-// ── Runtime stubs (shadowed by runtime.kn at combine time) ──
-
-pub struct RuntimeFunction:
-    name:         String
-    return_type:  String
-    param_types:  Array<String>
-    is_vararg:    Bool
-    calling_conv: String
-    attributes:   Array<String>
-    category:     String
-
-pub struct RuntimeTable:
-    functions: Array<RuntimeFunction>
-
 // NOTE: runtime_table_init() is defined in runtime.kn (real 132-entry table).
 // This local stub provides a fallback for standalone check.
 // At combine time, runtime.kn's version (defined first) takes precedence.
-
-pub fn runtime_table_init() -> RuntimeTable:
-    return RuntimeTable { functions: [] }
-
-pub fn emit_runtime_declares(table: RuntimeTable) -> String:
-    var output: String = ""
-    output = output + "; ── Runtime Function Declarations ──\n"
-    output = output + "; " + str(len(table.functions)) + " runtime functions\n\n"
-    if len(table.functions) > 0:
-        var i: Int = 0
-        while i < len(table.functions):
-            let fn_entry: RuntimeFunction = table.functions[i]
-            output = output + runtime_fn_to_declare(fn_entry)
-            i = i + 1
-    else:
-        // Fallback: emit minimum core declares when RuntimeTable is empty
-        output = output + "; Core runtime declares (fallback)\n"
-        output = output + core_runtime_declares_fallback()
-    output = output + "\n"
-    return output
 
 // ── Fallback: minimum core runtime declares when RuntimeTable is empty ──
 
@@ -95,246 +54,13 @@ pub fn core_runtime_declares_fallback() -> String:
 
 // ── runtime_fn_to_declare — format a single RuntimeFunction as LLVM declare ──
 
-pub fn runtime_fn_to_declare(fn_entry: RuntimeFunction) -> String:
-    var decl: String = "declare "
-    if fn_entry.calling_conv == "win64cc":
-        decl = decl + "win64cc "
-    if fn_entry.calling_conv == "fastcc":
-        decl = decl + "fastcc "
-    decl = decl + fn_entry.return_type + " @" + fn_entry.name + "("
-    var j: Int = 0
-    while j < len(fn_entry.param_types):
-        if j > 0:
-            decl = decl + ", "
-        decl = decl + fn_entry.param_types[j]
-        j = j + 1
-    if fn_entry.is_vararg:
-        if len(fn_entry.param_types) > 0:
-            decl = decl + ", "
-        decl = decl + "..."
-    decl = decl + ")"
-    var k: Int = 0
-    while k < len(fn_entry.attributes):
-        decl = decl + " " + fn_entry.attributes[k]
-        k = k + 1
-    decl = decl + "\n"
-    return decl
-
-pub fn target_triple_for_platform() -> String:
-    return "x86_64-pc-windows-msvc"
-
-pub fn data_layout_string() -> String:
-    return "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-
 // ── LLVM-C API stubs (Path B, in-memory) ──
-
-pub fn llvm_context_create() -> LLVMContextRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_module_create_with_name(name: String, ctx: LLVMContextRef) -> LLVMModuleRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_set_target(mod_ref: LLVMModuleRef, triple: String) with Unsafe:
-    return
-
-pub fn llvm_set_data_layout(mod_ref: LLVMModuleRef, layout: String) with Unsafe:
-    return
-
-pub fn llvm_builder_create(ctx: LLVMContextRef) -> LLVMBuilderRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_builder_dispose(builder: LLVMBuilderRef) with Unsafe:
-    return
-
-pub fn llvm_position_at_end(builder: LLVMBuilderRef, bb: LLVMBasicBlockRef) with Unsafe:
-    return
-
-pub fn llvm_int64_type(ctx: LLVMContextRef) -> LLVMTypeRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_function_type(ret_type: LLVMTypeRef, param_types: Array<LLVMTypeRef>, is_vararg: Bool) -> LLVMTypeRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_add_function(mod_ref: LLVMModuleRef, name: String, fn_type: LLVMTypeRef) -> LLVMValueRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_append_basic_block_in_context(ctx: LLVMContextRef, fn_val: LLVMValueRef, name: String) -> LLVMBasicBlockRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_const_int(int_type: LLVMTypeRef, value: Int, sign_extend: Bool) -> LLVMValueRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_build_ret(builder: LLVMBuilderRef, val: LLVMValueRef) -> LLVMValueRef with Unsafe:
-    return int_to_ptr(0, "Byte")
-
-pub fn llvm_verify_module(mod_ref: LLVMModuleRef, action: Int) -> Bool with Unsafe:
-    return false
-
-pub fn llvm_dump_module(mod_ref: LLVMModuleRef) with Unsafe:
-    return
-
-pub fn llvm_initialize_native_target() with Unsafe:
-    return
-
-pub fn llvm_initialize_native_asm_printer() with Unsafe:
-    return
-
-pub const LLVM_RETURN_STATUS_ACTION: Int = 2
-
-// ═══════════════════════════════════════════════════════════════════
-// AST / Type Constants — shared with types.kn, ast.kn
-// ═══════════════════════════════════════════════════════════════════
-
-// AST expression kind constants
-const AST_EXPR_INT:          Int = 100
-const AST_EXPR_FLOAT:        Int = 101
-const AST_EXPR_STRING:       Int = 102
-const AST_EXPR_BOOL:         Int = 104
-const AST_EXPR_NONE:         Int = 105
-const AST_EXPR_IDENT:        Int = 106
-const AST_EXPR_BINARY:       Int = 107
-const AST_EXPR_UNARY:        Int = 108
-const AST_EXPR_CALL:         Int = 109
-const AST_EXPR_FIELD:        Int = 111
-const AST_EXPR_ASSIGN:       Int = 113
-const AST_EXPR_IF:           Int = 114
-const AST_EXPR_BLOCK:        Int = 116
-const AST_EXPR_STRUCT_LIT:   Int = 118
-const AST_EXPR_METHOD_CALL:  Int = 110
-const AST_EXPR_INDEX:        Int = 112
-const AST_EXPR_MATCH:        Int = 115
-const AST_EXPR_ENUM_VARIANT: Int = 119
-const AST_EXPR_ARRAY:        Int = 120
-const AST_EXPR_TUPLE:        Int = 121
-const AST_EXPR_REF:          Int = 122
-const AST_EXPR_DEREF:        Int = 123
-const AST_EXPR_CAST:         Int = 124
-const AST_EXPR_SPAWN:        Int = 127
-const AST_EXPR_LAMBDA:       Int = 135
-const AST_EXPR_PAREN:        Int = 156
-
-const AST_STMT_LET:          Int = 50
-const AST_STMT_RETURN:       Int = 51
-const AST_STMT_DEFER:        Int = 52
-const AST_STMT_FOR:          Int = 53
-const AST_STMT_WHILE:        Int = 55
-const AST_STMT_LOOP:         Int = 56
-const AST_STMT_BREAK:        Int = 57
-const AST_STMT_CONTINUE:     Int = 58
-const AST_STMT_EXPR:         Int = 60
-
-// Binary op constants
-const BINOP_ADD:     Int = 0
-const BINOP_SUB:     Int = 1
-const BINOP_MUL:     Int = 2
-const BINOP_DIV:     Int = 3
-const BINOP_MOD:     Int = 4
-const BINOP_EQ:      Int = 6
-const BINOP_NE:      Int = 7
-const BINOP_LT:      Int = 8
-const BINOP_GT:      Int = 9
-const BINOP_LE:      Int = 10
-const BINOP_GE:      Int = 11
-const BINOP_AND:     Int = 12
-const BINOP_OR:      Int = 13
-const BINOP_BIT_AND: Int = 14
-const BINOP_BIT_OR:  Int = 15
-const BINOP_BIT_XOR: Int = 16
-const BINOP_SHL:     Int = 17
-const BINOP_SHR:     Int = 18
-
-// Unary op constants
-const UNOP_NEG:     Int = 0
-const UNOP_NOT:     Int = 1
-const UNOP_BIT_NOT: Int = 2
-const UNOP_REF:     Int = 3
-const UNOP_DEREF:   Int = 5
-
-// ResolvedType kind constants
-const RT_UNIT:     Int = 0
-const RT_BOOL:     Int = 1
-const RT_INT:      Int = 2
-const RT_FLOAT:    Int = 3
-const RT_STRING:   Int = 4
-const RT_CHAR:     Int = 5
-const RT_ARRAY:    Int = 6
-const RT_SLICE:    Int = 7
-const RT_TUPLE:    Int = 8
-const RT_REF:      Int = 9
-const RT_PTR:      Int = 10
-const RT_OPTION:   Int = 11
-const RT_RESULT:   Int = 12
-const RT_FUTURE:   Int = 13
-const RT_STRUCT:   Int = 14
-const RT_ENUM:     Int = 15
-const RT_FUNCTION: Int = 16
-const RT_GENERIC:  Int = 17
-const RT_NEVER:    Int = 18
-const RT_UNKNOWN:  Int = 19
-
-// AST item kind constants
-const AST_ITEM_FUNCTION: Int = 0
-const AST_ITEM_STRUCT:   Int = 1
-const AST_ITEM_ENUM:     Int = 2
-const AST_ITEM_CONST:    Int = 8
-
-// ═══════════════════════════════════════════════════════════════════
-// Local type mirrors (shadowed by real types at combine time)
-// ═══════════════════════════════════════════════════════════════════
-
-pub struct ResolvedType:
-    kind:          Int
-    int_size:      Int
-    float_size:    Int
-    name:          Int
-    inner_type:    Int
-    array_len:     Int
-    tuple_types:   Int
-    tuple_len:     Int
-    result_ok:     Int
-    result_err:    Int
-    fn_params:     Int
-    fn_param_count: Int
-    fn_ret:        Int
-    fn_effects:    Int
-    ref_mut:       Bool
-
-pub struct TypedItem:
-    kind:          Int
-    name:          String
-    name_idx:      Int
-    resolved_type: ResolvedType
-    ast_index:     Int
-    effects:       Int
-    field_names:   Array<Int>
-    field_types:   Array<ResolvedType>
-    fn_param_types: Array<ResolvedType>
-    fn_ret_type:    ResolvedType
-
-pub struct MonomorphizedProgram:
-    items:       Array<TypedItem>
-    mangled_map: Array<String>
-    ast_nodes:   Array<AstNode>
-
-pub struct AstNode:
-    kind:       Int
-    span_start: Int
-    span_end:   Int
-    data:       Array<Int>
-
-pub fn ast_data_len(node: AstNode) -> Int:
-    return len(node.data)
-
-pub fn ast_data_get(node: AstNode, index: Int) -> Int:
-    if index < 0 or index >= len(node.data):
-        return -1
-    return node.data[index]
 
 // ═══════════════════════════════════════════════════════════════════
 // CodegenState — accumulates LLVM IR text + tracking state
 // ═══════════════════════════════════════════════════════════════════
 
-pub struct LoopLabel:
+pub struct CgLoopLabel:
     continue_label: String
     break_label:    String
 
@@ -359,7 +85,7 @@ pub struct LlvmGenerator:
     global_const_count: Int
     locals:             Array<LocalEntry>
     struct_defs:        Array<StructEntry>
-    loop_stack:         Array<LoopLabel>
+    loop_stack:         Array<CgLoopLabel>
     string_consts:      Array<StringConstEntry>
     indent_level:       Int
     program_items:      Array<TypedItem>
@@ -511,7 +237,7 @@ pub fn struct_defs_find(gen: LlvmGenerator, name: String) -> String:
 
 pub fn loop_push(gen: LlvmGenerator, continue_label: String, break_label: String) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
-    let label: LoopLabel = LoopLabel { continue_label: continue_label, break_label: break_label }
+    let label: CgLoopLabel = CgLoopLabel { continue_label: continue_label, break_label: break_label }
     push(r.loop_stack, label)
     return r
 

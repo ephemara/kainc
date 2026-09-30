@@ -327,7 +327,7 @@ pub fn span_line_col(source: String, byte_offset: Int) -> Span:
     var col_no: Int = 1
     var i: Int = 0
     while i < byte_offset and i < len(source):
-        let c: String = text_char_at(text_from(source), i)
+        let c: String = char_at(source, i)
         if c == "\n":
             line_no = line_no + 1
             col_no = 1
@@ -1747,15 +1747,6 @@ pub fn pulse_body_effects() -> Int:
 // Local KcDiagnostic + KcDiagnosticBag (mirrors error.kn)
 // (AstNode, AstProgram, ast_data_* come from `use ast`)
 // ═══════════════════════════════════════════════════════════════════
-// [amalgamated: deduped struct KcDiagnostic — canonical in src/core/error.kn]
-// [amalgamated: deduped struct KcDiagnosticBag — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_new — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_add_error — canonical in src/core/error.kn]
-pub fn kc_diag_bag_add(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
-    return kc_diag_bag_add_error(bag, d)
-
-// [amalgamated: deduped fn kc_diag_bag_has_errors — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diagnostic_new — canonical in src/core/error.kn]
 // ═══════════════════════════════════════════════════════════════════
 // ResolvedType kind constants (20 variants)
 // ═══════════════════════════════════════════════════════════════════
@@ -3857,21 +3848,21 @@ pub fn lexer_is_alnum(c: String) -> Bool:
 pub fn lexer_current(state: LexerState) -> String:
     if state.pos >= len(state.source):
         return ""
-    return text_char_at(text_from(state.source), state.pos)
+    return char_at(state.source, state.pos)
 
 // Peek ahead by N bytes from current position
 pub fn lexer_peek(state: LexerState, ahead: Int) -> String:
     let idx: Int = state.pos + ahead
     if idx >= len(state.source):
         return ""
-    return text_char_at(text_from(state.source), idx)
+    return char_at(state.source, idx)
 
 // Advance position by N bytes, updating line_no/col_no counters
 pub fn lexer_advance(state: LexerState, n: Int) -> LexerState:
     let mut new_state: LexerState = state
     var i: Int = 0
     while i < n and new_state.pos < len(new_state.source):
-        if text_char_at(text_from(new_state.source), new_state.pos) == "\n":
+        if char_at(new_state.source, new_state.pos) == "\n":
             new_state.line_no = new_state.line_no + 1
             new_state.col_no = 1
         else:
@@ -3981,7 +3972,7 @@ pub fn lexer_lex_ident(state: LexerState, start_line: Int, start_col: Int, start
     let mut cur: LexerState = state
     let mut name: String = ""
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if lexer_is_alnum(c) or c == "_":
             name = name + c
             cur = lexer_advance(cur, 1)
@@ -3996,7 +3987,7 @@ pub fn lexer_lex_escape_after_backslash(state: LexerState) -> TokenResult:
     if state.pos >= len(state.source):
         return TokenResult { token: token_new(TOKEN_CHAR, "\\", state.line_no, state.col_no, state.pos), state: state }
     let mut cur: LexerState = state
-    let ec: String = text_char_at(text_from(cur.source), cur.pos)
+    let ec: String = char_at(cur.source, cur.pos)
     cur = lexer_advance(cur, 1)
     if ec == "n":  return TokenResult { token: token_new(TOKEN_CHAR, "\n", state.line_no, state.col_no, state.pos), state: cur }
     if ec == "t":  return TokenResult { token: token_new(TOKEN_CHAR, "\t", state.line_no, state.col_no, state.pos), state: cur }
@@ -4014,7 +4005,7 @@ pub fn lexer_lex_string(state: LexerState, start_line: Int, start_col: Int,
     let mut cur: LexerState = state
     let mut value: String = ""
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if c == "\n":
             // Unterminated string literal at end of line
             cur = lexer_error(cur, "unterminated string literal", ERR_LEX_UNTERMINATED_STRING, start_pos)
@@ -4048,7 +4039,7 @@ pub fn lexer_lex_char(state: LexerState, start_line: Int, start_col: Int, start_
     if cur.pos >= len(cur.source):
         cur = lexer_error(cur, "unterminated character literal", ERR_LEX_UNTERMINATED_CHAR, start_pos)
         return TokenResult { token: token_new(TOKEN_CHAR, "", start_line, start_col, start_pos), state: cur }
-    let c: String = text_char_at(text_from(cur.source), cur.pos)
+    let c: String = char_at(cur.source, cur.pos)
     var char_val: String = ""
     var char_kind: TokenKind = TOKEN_CHAR
     if c == "\\":
@@ -4060,7 +4051,7 @@ pub fn lexer_lex_char(state: LexerState, start_line: Int, start_col: Int, start_
         char_val = c
         cur = lexer_advance(cur, 1)
     // Expect closing '
-    if cur.pos < len(cur.source) and text_char_at(text_from(cur.source), cur.pos) == "'":
+    if cur.pos < len(cur.source) and char_at(cur.source, cur.pos) == "'":
         cur = lexer_advance(cur, 1)  // skip closing '
     else:
         cur = lexer_error(cur, "unterminated character literal", ERR_LEX_UNTERMINATED_CHAR, start_pos)
@@ -4091,7 +4082,7 @@ pub fn lexer_lex_hex_number(state: LexerState, start_line: Int, start_col: Int, 
     var value: Int = 0
     var has_digits: Bool = false
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if lexer_is_hex_digit(c):
             let digit: Int = lexer_hex_digit_val(c)
             value = (value * 16) + digit
@@ -4110,7 +4101,7 @@ pub fn lexer_lex_oct_number(state: LexerState, start_line: Int, start_col: Int, 
     let mut cur: LexerState = lexer_advance(state, 2)  // skip 0o
     var value: Int = 0
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if lexer_is_oct_digit(c):
             let digit: Int = lexer_char_to_val(c)
             value = (value * 8) + digit
@@ -4128,7 +4119,7 @@ pub fn lexer_lex_bin_number(state: LexerState, start_line: Int, start_col: Int, 
     let mut cur: LexerState = lexer_advance(state, 2)  // skip 0b
     var value: Int = 0
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if lexer_is_bin_digit(c):
             let digit: Int = lexer_char_to_val(c)
             value = (value * 2) + digit
@@ -4147,7 +4138,7 @@ pub fn lexer_lex_dec_number(state: LexerState, start_line: Int, start_col: Int, 
     var int_part: Int = 0
     var raw_text: String = ""
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if lexer_is_digit(c):
             int_part = (int_part * 10) + lexer_char_to_val(c)
             raw_text = raw_text + c
@@ -4157,14 +4148,14 @@ pub fn lexer_lex_dec_number(state: LexerState, start_line: Int, start_col: Int, 
         else:
             break
     // Check for float: decimal point followed by digit
-    if cur.pos < len(cur.source) and text_char_at(text_from(cur.source), cur.pos) == ".":
+    if cur.pos < len(cur.source) and char_at(cur.source, cur.pos) == ".":
         let peek: String = lexer_peek(cur, 1)
         if lexer_is_digit(peek):
             cur = lexer_advance(cur, 1)  // skip .
             var frac_part: Int = 0
             var frac_scale: Int = 1
             while cur.pos < len(cur.source):
-                let c: String = text_char_at(text_from(cur.source), cur.pos)
+                let c: String = char_at(cur.source, cur.pos)
                 if lexer_is_digit(c):
                     frac_part = (frac_part * 10) + lexer_char_to_val(c)
                     frac_scale = frac_scale * 10
@@ -4184,9 +4175,9 @@ pub fn lexer_lex_dec_number(state: LexerState, start_line: Int, start_col: Int, 
 
 // Lex a numeric literal — dispatches on prefix
 pub fn lexer_lex_number(state: LexerState, start_line: Int, start_col: Int, start_pos: Int) -> TokenResult:
-    let c0: String = text_char_at(text_from(state.source), state.pos)
+    let c0: String = char_at(state.source, state.pos)
     if c0 == "0" and state.pos + 1 < len(state.source):
-        let c1: String = text_char_at(text_from(state.source), state.pos + 1)
+        let c1: String = char_at(state.source, state.pos + 1)
         if c1 == "x" or c1 == "X":
             return lexer_lex_hex_number(state, start_line, start_col, start_pos)
         if c1 == "o" or c1 == "O":
@@ -4200,7 +4191,7 @@ pub fn lexer_lex_number(state: LexerState, start_line: Int, start_col: Int, star
 // ═══════════════════════════════════════════════════════════════════════════
 
 pub fn lexer_lex_operator(state: LexerState, start_line: Int, start_col: Int, start_pos: Int) -> TokenResult:
-    let c: String = text_char_at(text_from(state.source), state.pos)
+    let c: String = char_at(state.source, state.pos)
 
     // + family: ++ += +
     if c == "+":
@@ -4233,7 +4224,7 @@ pub fn lexer_lex_operator(state: LexerState, start_line: Int, start_col: Int, st
         if lexer_peek(state, 1) == "/":
             // Line comment — skip to end of line
             let mut cur: LexerState = lexer_advance(state, 2)
-            while cur.pos < len(cur.source) and text_char_at(text_from(cur.source), cur.pos) != "\n":
+            while cur.pos < len(cur.source) and char_at(cur.source, cur.pos) != "\n":
                 cur = lexer_advance(cur, 1)
             // Skip the comment, return NOTHING — caller should retry
             return TokenResult { token: token_new(TOKEN_COMMENT, "", start_line, start_col, start_pos), state: cur }
@@ -4367,7 +4358,7 @@ pub fn lexer_next_token(state: LexerState) -> TokenResult:
 
     // Skip whitespace except newlines
     while cur.pos < len(cur.source):
-        let c: String = text_char_at(text_from(cur.source), cur.pos)
+        let c: String = char_at(cur.source, cur.pos)
         if c == " " or c == "\t" or c == "\r":
             cur = lexer_advance(cur, 1)
             continue
@@ -4377,7 +4368,7 @@ pub fn lexer_next_token(state: LexerState) -> TokenResult:
     if cur.pos >= len(cur.source):
         return TokenResult { token: token_new(TOKEN_EOF, "", cur.line_no, cur.col_no, cur.pos), state: cur }
 
-    let c: String = text_char_at(text_from(cur.source), cur.pos)
+    let c: String = char_at(cur.source, cur.pos)
     let start_line: Int = cur.line_no
     let start_col: Int = cur.col_no
     let start_pos: Int = cur.pos
@@ -4387,7 +4378,7 @@ pub fn lexer_next_token(state: LexerState) -> TokenResult:
         cur = lexer_advance(cur, 1)
         var ws: String = "\n"
         while cur.pos < len(cur.source):
-            let nc: String = text_char_at(text_from(cur.source), cur.pos)
+            let nc: String = char_at(cur.source, cur.pos)
             if nc == " " or nc == "\t" or nc == "\r":
                 ws = ws + nc
                 cur = lexer_advance(cur, 1)
@@ -4400,17 +4391,17 @@ pub fn lexer_next_token(state: LexerState) -> TokenResult:
     // Line comment //
     if c == "/" and lexer_peek(cur, 1) == "/":
         cur = lexer_advance(cur, 2)
-        while cur.pos < len(cur.source) and text_char_at(text_from(cur.source), cur.pos) != "\n":
+        while cur.pos < len(cur.source) and char_at(cur.source, cur.pos) != "\n":
             cur = lexer_advance(cur, 1)
         // Skip the comment, return next real token
         return lexer_next_token(cur)
 
     // Hash comment # — only at start of line
     if c == "#":
-        let is_line_start: Bool = start_col == 1 or (start_pos > 0 and text_char_at(text_from(state.source), start_pos - 1) == "\n")
+        let is_line_start: Bool = start_col == 1 or (start_pos > 0 and char_at(state.source, start_pos - 1) == "\n")
         if is_line_start:
             cur = lexer_advance(cur, 1)
-            while cur.pos < len(cur.source) and text_char_at(text_from(cur.source), cur.pos) != "\n":
+            while cur.pos < len(cur.source) and char_at(cur.source, cur.pos) != "\n":
                 cur = lexer_advance(cur, 1)
             return lexer_next_token(cur)
 
@@ -4469,9 +4460,9 @@ pub fn compute_indent(ws: String) -> Int:
     var total: Int = 0
     var i: Int = 1  // skip the leading \n
     while i < len(ws):
-        if text_char_at(text_from(ws), i) == " ":
+        if char_at(ws, i) == " ":
             total = total + 1
-        elif text_char_at(text_from(ws), i) == "\t":
+        elif char_at(ws, i) == "\t":
             total = total + 4  // tab = 4 spaces
         i = i + 1
     return total
@@ -6264,7 +6255,7 @@ pub fn parse_primary(st: ParserState) -> ParseResult:
     // struct literal: StructName { ... }
     if kind == TOKEN_IDENT:
         let pk: Token = parser_peek(st, 1)
-        if pk.kind == TOKEN_LBRACE and text_char_at(text_from(tok.text), 0) >= "A" and text_char_at(text_from(tok.text), 0) <= "Z":
+        if pk.kind == TOKEN_LBRACE and char_at(tok.text, 0) >= "A" and char_at(tok.text, 0) <= "Z":
             return parse_struct_literal(st)
 
     // Unknown primary
@@ -7919,7 +7910,6 @@ pub const UNOP_SUB: Int = 7
 // ═══════════════════════════════════════════════════════════════════
 // Effect Constants (local duplicates)
 // ═══════════════════════════════════════════════════════════════════
-// [amalgamated: deduped const EFF_PURE — canonical in src/typecheck/effects.kn]
 // ── Constructors ──
 pub fn mono_rt_zero() -> ResolvedType:
     return ResolvedType {
@@ -7961,8 +7951,6 @@ pub fn mono_rt_struct(name: Int) -> ResolvedType:
 // ═══════════════════════════════════════════════════════════════════
 // TypedItem (local duplicate)
 // ═══════════════════════════════════════════════════════════════════
-// [amalgamated: deduped struct TypedItem — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped struct TypedProgram — canonical in src/typecheck/types.kn]
 // ── Type lookup helper from flat array ──
 pub fn mono_type_get(types: Array<ResolvedType>, idx: Int) -> ResolvedType:
     if idx < 0 or idx >= len(types):
@@ -8987,163 +8975,6 @@ pub fn llvm_set_function_call_conv(fn_val: LLVMValueRef, cc: Int) with Unsafe:
 // ═══════════════════════════════════════════════════════════════════════
 
 // === END: src/codegen/llvm_ffi.kn ===
-
-// === BEGIN: src/codegen/llvm_stub_types.kn ===
-// llvm_stub_types.kn — Stub definitions for LLVM-C opaque types
-// ═══════════════════════════════════════════════════════════════════════
-// CREATED BY: Stream GREEN (ouroboros pipeline)
-// Purpose: Provide type aliases + stub functions when LLVM-C headers
-//          are not available on the build machine.
-//
-// When HAS_LLVM_HEADERS == 0, this file provides the necessary type
-// definitions so that llvm_ffi.kn passes `kain check` without needing
-// the real LLVM-C headers installed.
-//
-// Path A (textual .ll IR codegen) does NOT use LLVM-C API calls — it
-// emits LLVM IR as text strings. The stubs here only affect Path B
-// (LLVM-C API / OrcJIT), which is disabled when HAS_LLVM_HEADERS == 0.
-// ═══════════════════════════════════════════════════════════════════════
-
-// ── Feature flag: set to 1 when LLVM-C headers are available ──
-// [amalgamated: deduped const HAS_LLVM_HEADERS — canonical in src/codegen/llvm_ffi.kn]
-// ── LLVM RealPredicate Constants ──
-
-// [amalgamated: deduped const LLVM_REAL_OEQ — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_ONE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_OGT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_OGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_OLT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_OLE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_ORD — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_UNO — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_UEQ — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_UNE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_UGT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_UGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_ULT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_REAL_ULE — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Linkage Constants ──
-
-// [amalgamated: deduped const LLVM_EXTERNAL_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_AVAILABLE_EXTERNALLY_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_LINK_ONCE_ANY_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_LINK_ONCE_ODR_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_WEAK_ANY_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_WEAK_ODR_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_APPENDING_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_INTERNAL_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_PRIVATE_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_EXTERNAL_WEAK_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_COMMON_LINKAGE — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Visibility Constants ──
-
-// [amalgamated: deduped const LLVM_DEFAULT_VISIBILITY — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_HIDDEN_VISIBILITY — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_PROTECTED_VISIBILITY — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Calling Convention Constants ──
-
-// [amalgamated: deduped const LLVM_CCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_FASTCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_COLDCALLCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ANY_REGCALLCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_X86_STDCALLCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_X86_FASTCALLCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_X86_64_WIN64CC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_X86_64_SYSVCC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_X86_VECTORCALLCC — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Verifier Failure Action Constants ──
-
-// [amalgamated: deduped const LLVM_ABORT_PROCESS_ACTION — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_PRINT_MESSAGE_ACTION — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_RETURN_STATUS_ACTION — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Thread Local Mode ──
-
-// [amalgamated: deduped const LLVM_NOT_THREAD_LOCAL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_GENERAL_DYNAMIC_TLS_MODEL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_LOCAL_DYNAMIC_TLS_MODEL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_INITIAL_EXEC_TLS_MODEL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_LOCAL_EXEC_TLS_MODEL — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Atomic Ordering Constants ──
-
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_NOT_ATOMIC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_UNORDERED — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_MONOTONIC — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_ACQUIRE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_RELEASE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_ACQUIRE_RELEASE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_ATOMIC_ORDERING_SEQUENTIALLY_CONSISTENT — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Optimization Level Constants ──
-
-// [amalgamated: deduped const LLVM_CODE_GEN_LEVEL_NONE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_GEN_LEVEL_LESS — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_GEN_LEVEL_DEFAULT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_GEN_LEVEL_AGGRESSIVE — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Code Model Constants ──
-
-// [amalgamated: deduped const LLVM_CODE_MODEL_DEFAULT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_JIT_DEFAULT — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_TINY — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_SMALL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_KERNEL — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_MEDIUM — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CODE_MODEL_LARGE — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Code Gen File Type Constants ──
-
-// [amalgamated: deduped const LLVM_ASSEMBLY_FILE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_OBJECT_FILE — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Value Kind Constants ──
-
-// [amalgamated: deduped const LLVM_ARGUMENT_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_BASIC_BLOCK_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MEMORY_USE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MEMORY_DEF_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MEMORY_PHI_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_FUNCTION_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_GLOBAL_ALIAS_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_GLOBAL_IFUNC_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_GLOBAL_VARIABLE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_BLOCK_ADDRESS_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_EXPR_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_ARRAY_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_STRUCT_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_VECTOR_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_UNDEF_VALUE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_AGGREGATE_ZERO_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_DATA_ARRAY_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_DATA_VECTOR_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_INT_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_FP_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_POINTER_NULL_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_CONSTANT_TOKEN_NONE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_METADATA_AS_VALUE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_INLINE_ASM_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_INSTRUCTION_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_POISON_VALUE_VALUE_KIND — canonical in src/codegen/llvm_ffi.kn]
-
-// ── LLVM Module Flag Behavior Constants ──
-
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_ERROR — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_WARNING — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_REQUIRE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_OVERRIDE — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_APPEND — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_MODULE_FLAG_BEHAVIOR_APPEND_UNIQUE — canonical in src/codegen/llvm_ffi.kn]
-
-// ═══════════════════════════════════════════════════════════════════════
-// End llvm_stub_types.kn — import from this file when HAS_LLVM_HEADERS==0
-// ═══════════════════════════════════════════════════════════════════════
-
-// === END: src/codegen/llvm_stub_types.kn ===
 
 // === BEGIN: src/jit/jit_metal.kn ===
 // =============================================================================
@@ -11573,14 +11404,10 @@ use std::fmt
 // Local LLVM-C type aliases (Path B stubs — real in llvm_ffi.kn)
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped type LLVMContextRef — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped struct RuntimeTable — canonical in src/codegen/runtime.kn]
 // NOTE: runtime_table_init() is defined in runtime.kn (real 132-entry table).
 // This local stub provides a fallback for standalone check.
 // At combine time, runtime.kn's version (defined first) takes precedence.
 
-// [amalgamated: deduped fn runtime_table_init — canonical in src/codegen/runtime.kn]
-// [amalgamated: deduped fn emit_runtime_declares — canonical in src/codegen/runtime.kn]
 // ── Fallback: minimum core runtime declares when RuntimeTable is empty ──
 
 pub fn core_runtime_declares_fallback() -> String:
@@ -11607,39 +11434,16 @@ pub fn core_runtime_declares_fallback() -> String:
 
 // ── runtime_fn_to_declare — format a single RuntimeFunction as LLVM declare ──
 
-// [amalgamated: deduped fn runtime_fn_to_declare — canonical in src/codegen/runtime.kn]
-// [amalgamated: deduped fn target_triple_for_platform — canonical in src/codegen/runtime.kn]
-// [amalgamated: deduped fn data_layout_string — canonical in src/codegen/runtime.kn]
 // ── LLVM-C API stubs (Path B, in-memory) ──
 
-// [amalgamated: deduped fn llvm_context_create — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_module_create_with_name — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_set_target — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_set_data_layout — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_builder_create — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_builder_dispose — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_position_at_end — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_int64_type — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_function_type — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_add_function — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_append_basic_block_in_context — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_const_int — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_build_ret — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_verify_module — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_dump_module — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_initialize_native_target — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped fn llvm_initialize_native_asm_printer — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped const LLVM_RETURN_STATUS_ACTION — canonical in src/codegen/llvm_ffi.kn]
-// [amalgamated: deduped struct TypedItem — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped struct MonomorphizedProgram — canonical in src/typecheck/monomorphize.kn]
-// [amalgamated: deduped struct AstNode — canonical in src/core/ast.kn]
-// [amalgamated: deduped fn ast_data_len — canonical in src/core/ast.kn]
-// [amalgamated: deduped fn ast_data_get — canonical in src/core/ast.kn]
 // ═══════════════════════════════════════════════════════════════════
 // CodegenState — accumulates LLVM IR text + tracking state
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped struct LoopLabel — canonical in src/parser/parser.kn]
+pub struct CgLoopLabel:
+    continue_label: String
+    break_label:    String
+
 pub struct LocalEntry:
     name: String
     reg:  String
@@ -11661,7 +11465,7 @@ pub struct LlvmGenerator:
     global_const_count: Int
     locals:             Array<LocalEntry>
     struct_defs:        Array<StructEntry>
-    loop_stack:         Array<LoopLabel>
+    loop_stack:         Array<CgLoopLabel>
     string_consts:      Array<StringConstEntry>
     indent_level:       Int
     program_items:      Array<TypedItem>
@@ -11813,7 +11617,7 @@ pub fn struct_defs_find(gen: LlvmGenerator, name: String) -> String:
 
 pub fn loop_push(gen: LlvmGenerator, continue_label: String, break_label: String) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
-    let label: LoopLabel = LoopLabel { continue_label: continue_label, break_label: break_label }
+    let label: CgLoopLabel = CgLoopLabel { continue_label: continue_label, break_label: break_label }
     push(r.loop_stack, label)
     return r
 
@@ -14038,24 +13842,6 @@ use std::fs
 // Local type mirrors (standalone check compatibility)
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped struct KcDiagnostic — canonical in src/core/error.kn]
-// [amalgamated: deduped struct KcDiagnosticBag — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_new — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_has_errors — canonical in src/core/error.kn]
-pub struct KcToken:
-    kind:    Int
-    text:    String
-    line_no: Int
-    col_no:  Int
-
-// [amalgamated: deduped struct AstNode — canonical in src/core/ast.kn]
-// [amalgamated: deduped struct AstProgram — canonical in src/core/ast.kn]
-// [amalgamated: deduped fn ast_data_len — canonical in src/core/ast.kn]
-// [amalgamated: deduped fn ast_data_get — canonical in src/core/ast.kn]
-// [amalgamated: deduped struct ResolvedType — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped struct TypedItem — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped struct TypedProgram — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped struct MonomorphizedProgram — canonical in src/typecheck/monomorphize.kn]
 pub struct BuildConfig:
     name:         String
     target:       String
@@ -14085,28 +13871,8 @@ pub fn build_config_default() -> BuildConfig:
 
 // ── Forward stub types for upstream modules ──
 
-pub struct KcLexerState:
-    source:    String
-    file_path: String
-
-pub struct KcLexTokensResult:
-    tokens: Array<KcToken>
-    errors: KcDiagnosticBag
-
-// [amalgamated: deduped struct ParserState — canonical in src/parser/parser.kn]
-// [amalgamated: deduped struct ProgResult — canonical in src/parser/parser.kn]
-// [amalgamated: deduped struct TypeEnv — canonical in src/typecheck/types.kn]
 // ── Stub functions (resolved at ouroboros combine time) ──
 
-// [amalgamated: deduped fn lexer_new — canonical in src/parser/lexer.kn]
-// [amalgamated: deduped fn lexer_tokenize_all — canonical in src/parser/lexer.kn]
-// [amalgamated: deduped fn parser_new — canonical in src/parser/parser.kn]
-// [amalgamated: deduped fn parse — canonical in src/parser/parser.kn]
-// [amalgamated: deduped fn type_env_new — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped fn typecheck — canonical in src/typecheck/types.kn]
-// [amalgamated: deduped fn monomorphize — canonical in src/typecheck/monomorphize.kn]
-// [amalgamated: deduped fn codegen_textual — canonical in src/codegen/codegen.kn]
-// [amalgamated: deduped fn target_triple_for_platform — canonical in src/codegen/runtime.kn]
 // ═══════════════════════════════════════════════════════════════════
 // Pipeline Phase Constants
 // ═══════════════════════════════════════════════════════════════════
@@ -14524,8 +14290,6 @@ use std::text
 // BuildConfig — populated from markscript tables in build.md
 // ═════════════════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped struct BuildConfig — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped fn build_config_default — canonical in src/cli/compiler.kn]
 // ═════════════════════════════════════════════════════════════════════════════
 // Diagnostics + TestResult — simple types for orchestrator state
 // ═════════════════════════════════════════════════════════════════════════════
@@ -14598,20 +14362,8 @@ pub const SOURCE_ORDER: Array<String> = [
 // implementations take precedence and these stubs are shadowed.
 // ═════════════════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped struct KcDiagnostic — canonical in src/core/error.kn]
-// [amalgamated: deduped struct KcDiagnosticBag — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_new — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diag_bag_has_errors — canonical in src/core/error.kn]
-// [amalgamated: deduped fn kc_diagnostic_new — canonical in src/core/error.kn]
-// [amalgamated: deduped struct DriverSession — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped struct CompileResult — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped struct KcCheckResult — canonical in src/cli/compiler.kn]
 // ── Forward stubs for compiler.kn functions (shadowed at combine time) ──
 
-// [amalgamated: deduped fn driver_session_new — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped fn driver_session_check — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped fn driver_session_compile — canonical in src/cli/compiler.kn]
-// [amalgamated: deduped fn emit_diagnostics_to_stderr — canonical in src/cli/compiler.kn]
 // ═════════════════════════════════════════════════════════════════════════════
 // Handler Functions — WIRED to compiler.kn DriverSession (Phase 3+)
 //
@@ -18252,19 +18004,18 @@ pub fn parse_args(args: Array<String>) -> CliConfig:
 
 // ── Helper: check if string starts with a given first character ──
 pub fn str_starts_with_char(s: String, start_idx: Int, ch: String) -> Bool:
+    // NOTE: s[i] string subscript segfaults at runtime in this snapshot;
+    // route through std::text helpers (TurboKain idiom).
     if len(s) <= start_idx:
         return false
-    return s[start_idx] == ch
+    let tail: String = text_substring_string(s, start_idx, len(s) - start_idx)
+    return text_starts_with_string(tail, ch)
 
 // ═══════════════════════════════════════════════════════════════════
 // run_subcommand — dispatch to the correct handler
 // ═══════════════════════════════════════════════════════════════════
 
 pub fn run_subcommand(config: CliConfig) -> Int with IO:
-    println("run_subcommand entered sub=" + str(config.subcommand))
-    // ── Init: load command registry at startup ──
-    init_command_registry()
-    println("registry ok")
 
     // ── Kn launcher: show quick-start menu if no subcommand ──
     if config.launcher_kind == LAUNCHER_KN and config.subcommand == 10:
@@ -18583,17 +18334,14 @@ pub const SUBCMD_CLEAN:      Int = 9
 // CliConfig
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped struct CliConfig — canonical in src/cli/cli.kn]
 // ═══════════════════════════════════════════════════════════════════
 // parse_args
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped fn parse_args — canonical in src/cli/cli.kn]
 // ═══════════════════════════════════════════════════════════════════
 // Help
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped fn print_help — canonical in src/cli/cli.kn]
 pub fn print_version() with IO:
     println("kainc " + VERSION)
     println("Build: " + BUILD_DATE)
@@ -18603,7 +18351,6 @@ pub fn print_version() with IO:
 // Subcommand dispatch
 // ═══════════════════════════════════════════════════════════════════
 
-// [amalgamated: deduped fn run_subcommand — canonical in src/cli/cli.kn]
 // ═══════════════════════════════════════════════════════════════════
 // Entry Point — delegates to orchestrator.kn's orch_*_cli()
 // ═══════════════════════════════════════════════════════════════════

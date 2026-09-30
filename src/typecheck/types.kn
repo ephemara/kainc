@@ -20,51 +20,6 @@ use effects
 // Local KcDiagnostic + KcDiagnosticBag (mirrors error.kn)
 // (AstNode, AstProgram, ast_data_* come from `use ast`)
 // ═══════════════════════════════════════════════════════════════════
-pub struct KcDiagnostic:
-    severity:    Int
-    file_path:   String
-    line_no:     Int
-    column:      Int
-    message:     String
-    error_kind:  String
-    span_start:  Int
-    span_end:    Int
-    source_line: String
-
-pub struct KcDiagnosticBag:
-    errors:   Array<KcDiagnostic>
-    warnings: Array<KcDiagnostic>
-    notes:    Array<KcDiagnostic>
-
-pub fn kc_diag_bag_new() -> KcDiagnosticBag:
-    return KcDiagnosticBag { errors: [], warnings: [], notes: [] }
-
-pub fn kc_diag_bag_add_error(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
-    let mut new_bag: KcDiagnosticBag = bag
-    push(new_bag.errors, d)
-    return new_bag
-
-pub fn kc_diag_bag_add(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
-    return kc_diag_bag_add_error(bag, d)
-
-pub fn kc_diag_bag_has_errors(bag: KcDiagnosticBag) -> Bool:
-    return len(bag.errors) > 0
-
-pub fn kc_diagnostic_new(severity: Int, path: String, line_no: Int, col: Int,
-                          message: String, kind: String,
-                          span_start: Int, span_end: Int, source_line: String) -> KcDiagnostic:
-    return KcDiagnostic {
-        severity: severity,
-        file_path: path,
-        line_no: line_no,
-        column: col,
-        message: message,
-        error_kind: kind,
-        span_start: span_start,
-        span_end: span_end,
-        source_line: source_line,
-    }
-
 // ═══════════════════════════════════════════════════════════════════
 // ResolvedType kind constants (20 variants)
 // ═══════════════════════════════════════════════════════════════════

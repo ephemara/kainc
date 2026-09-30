@@ -29,44 +29,6 @@ use std::text
 // BuildConfig — populated from markscript tables in build.md
 // ═════════════════════════════════════════════════════════════════════════════
 
-pub struct BuildConfig:
-    name:         String
-    target:       String
-    profile:      String
-    optimize:     Bool
-    lto:          String
-    entry:        String
-    source_root:  String
-    deps:         String
-    output:       String
-    runtime:      String
-    linker:       String
-    linker_flags: String
-    cc:           String
-    cc_flags:     String
-    test_root:    String
-    doc_root:     String
-
-pub fn build_config_default() -> BuildConfig:
-    return BuildConfig {
-        name:         "kainc",
-        target:       "llvm",
-        profile:      "debug",
-        optimize:     false,
-        lto:          "none",
-        entry:        "src/main.kn",
-        source_root:  "src/",
-        deps:         "",
-        output:       "kainc",
-        runtime:      "kain_runtime",
-        linker:       "clang",
-        linker_flags: "",
-        cc:           "clang",
-        cc_flags:     "",
-        test_root:    "",
-        doc_root:     "",
-    }
-
 // ═════════════════════════════════════════════════════════════════════════════
 // Diagnostics + TestResult — simple types for orchestrator state
 // ═════════════════════════════════════════════════════════════════════════════
@@ -139,89 +101,7 @@ pub const SOURCE_ORDER: Array<String> = [
 // implementations take precedence and these stubs are shadowed.
 // ═════════════════════════════════════════════════════════════════════════════
 
-pub struct KcDiagnostic:
-    severity:    Int
-    file_path:   String
-    line_no:     Int
-    column:      Int
-    message:     String
-    error_kind:  String
-    span_start:  Int
-    span_end:    Int
-
-pub struct KcDiagnosticBag:
-    errors:   Array<KcDiagnostic>
-    warnings: Array<KcDiagnostic>
-    notes:    Array<KcDiagnostic>
-
-pub fn kc_diag_bag_new() -> KcDiagnosticBag:
-    return KcDiagnosticBag { errors: [], warnings: [], notes: [] }
-
-pub fn kc_diag_bag_has_errors(bag: KcDiagnosticBag) -> Bool:
-    return len(bag.errors) > 0
-
-pub fn kc_diagnostic_new(severity: Int, message: String, kind: String, span_start: Int, span_end: Int) -> KcDiagnostic:
-    return KcDiagnostic {
-        severity: severity, file_path: "", line_no: 0, column: 0,
-        message: message, error_kind: kind, span_start: span_start, span_end: span_end,
-    }
-
-pub struct DriverSession:
-    source:          String
-    file_path:       String
-    diagnostics:     KcDiagnosticBag
-    config:          BuildConfig
-    progress_phase:  Int
-    frontend_cache:  Int
-    checked_cache:   Int
-    debug_info:      Bool
-
-pub struct CompileResult:
-    success:    Bool
-    output:     String
-    exit_code:  Int
-    errors:     KcDiagnosticBag
-
-pub struct KcCheckResult:
-    success:      Bool
-    diagnostics:  KcDiagnosticBag
-
 // ── Forward stubs for compiler.kn functions (shadowed at combine time) ──
-
-pub fn driver_session_new() -> DriverSession:
-    return DriverSession {
-        source: "", file_path: "", diagnostics: kc_diag_bag_new(),
-        config: build_config_default(), progress_phase: 0,
-        frontend_cache: 0, checked_cache: 0, debug_info: false,
-    }
-
-pub fn driver_session_check(session: DriverSession, source: String, source_path: String) -> KcCheckResult with IO:
-    // Forward stub — for bootstrap, handler_compile_check bypasses this
-    return KcCheckResult { success: false, diagnostics: kc_diag_bag_new() }
-
-pub fn driver_session_compile(session: DriverSession, source: String, source_path: String, target: String) -> CompileResult with IO:
-    // Forward stub — for bootstrap, handler_compile_codegen bypasses this
-    return CompileResult { success: false, output: "", exit_code: 1, errors: kc_diag_bag_new() }
-
-pub fn emit_diagnostics_to_stderr(bag: KcDiagnosticBag) with IO:
-    // Print errors
-    var i: Int = 0
-    while i < len(bag.errors):
-        let d: KcDiagnostic = bag.errors[i]
-        println(d.file_path + ":" + str(d.line_no) + ":" + str(d.column) + ": error: " + d.message)
-        i = i + 1
-    // Print warnings
-    i = 0
-    while i < len(bag.warnings):
-        let d: KcDiagnostic = bag.warnings[i]
-        println(d.file_path + ":" + str(d.line_no) + ":" + str(d.column) + ": warning: " + d.message)
-        i = i + 1
-    // Print notes
-    i = 0
-    while i < len(bag.notes):
-        let d: KcDiagnostic = bag.notes[i]
-        println(d.file_path + ":" + str(d.line_no) + ":" + str(d.column) + ": note: " + d.message)
-        i = i + 1
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Handler Functions — WIRED to compiler.kn DriverSession (Phase 3+)
