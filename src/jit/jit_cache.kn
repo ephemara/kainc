@@ -64,9 +64,9 @@ pub fn cache_store_check(cache: CacheStore, hash: Int) -> CacheStore:
 
 pub fn cache_store_register(cache: CacheStore, hash: Int, ptr: ptr<Byte>, size: Int) -> CacheStore:
     var c: CacheStore = cache
-    c.hashes.push(hash)
-    c.ptrs.push(ptr)
-    c.sizes.push(size)
+    push(c.hashes, hash)
+    push(c.ptrs, ptr)
+    push(c.sizes, size)
     c.count = c.count + 1
     c.bytes = c.bytes + size
     c.compiles = c.compiles + 1

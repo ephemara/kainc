@@ -1,3 +1,4 @@
+use std::text
 // span.kn — Source location helpers
 // STREAM: ALPHA
 // Consumed by: DELTA (parser), FOXTROT (typechecker)
@@ -26,7 +27,7 @@ pub fn span_line_col(source: String, byte_offset: Int) -> Span:
     var col_no: Int = 1
     var i: Int = 0
     while i < byte_offset and i < len(source):
-        let c: String = source[i]
+        let c: String = text_char_at(text_from(source), i)
         if c == "\n":
             line_no = line_no + 1
             col_no = 1

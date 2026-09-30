@@ -169,8 +169,8 @@ pub fn binding_map_insert(bm: BindingMap, key: Int, val: ResolvedType) -> Bindin
             nb.values[i] = val
             return nb
         i = i + 1
-    nb.keys.push(key)
-    nb.values.push(val)
+    push(nb.keys, key)
+    push(nb.values, val)
     return nb
 
 // ═══════════════════════════════════════════════════════════════════
@@ -372,17 +372,17 @@ pub fn monomorphize(typed: TypedProgram, env: TypeEnv) -> MonomorphizedProgram:
 
         // Detect generic items
         if has_generic_params(item):
-            generic_items.push(i)
+            push(generic_items, i)
 
         // Copy items through (generic instantiation will happen in a future pass)
-        items.push(item)
-        mangled.push(item.name)
+        push(items, item)
+        push(mangled, item.name)
 
         i = i + 1
 
     // If there are generic items, note them for later instantiation
     // (In the bootstrap compiler, generic monomorphization is deferred to call-site
-    //  analysis, which happens when codegen encounters specific call types.)
+    //  analysis, which happens when codegen encounters specific call )
     let gen_count: Int = len(generic_items)
     if gen_count > 0:
         // Generic items detected but not yet instantiated —

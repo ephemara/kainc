@@ -102,37 +102,29 @@ pub fn session_accept_raw_line(
 
     // ── Check for REPL directives ──
     let directive: Option<ReplDirective> = cmd_parse(trimmed)
+    if directive == Some(ReplDirective::Exit):
+        return AcceptLineResult { session: session, action: ReplLineAction::Exit }
+    if directive == Some(ReplDirective::Clear):
+        return AcceptLineResult {
+            session: session_clear(session),
+            action:  ReplLineAction::Clear,
+        }
+    if directive == Some(ReplDirective::Run):
+        return take_buffer_for_evaluation_if_present(session)
+    if directive == Some(ReplDirective::Help):
+        return AcceptLineResult { session: session, action: ReplLineAction::Help }
+    if directive == Some(ReplDirective::Theme):
+        return AcceptLineResult {
+            session: session,
+            action:  ReplLineAction::Theme(extract_command_arg(trimmed, 6)),
+        }
+    if directive == Some(ReplDirective::Open):
+        return AcceptLineResult {
+            session: session,
+            action:  ReplLineAction::Open(extract_command_arg(trimmed, 5)),
+        }
     if directive != none:
-        match directive:
-            Some(ReplDirective::Exit) =>
-                return AcceptLineResult { session: session, action: ReplLineAction::Exit }
-
-            Some(ReplDirective::Clear) =>
-                return AcceptLineResult {
-                    session: session_clear(session),
-                    action:  ReplLineAction::Clear,
-                }
-
-            Some(ReplDirective::Run) =>
-                return take_buffer_for_evaluation_if_present(session)
-
-            Some(ReplDirective::Help) =>
-                return AcceptLineResult { session: session, action: ReplLineAction::Help }
-
-            Some(ReplDirective::Theme) =>
-                return AcceptLineResult {
-                    session: session,
-                    action:  ReplLineAction::Theme(extract_command_arg(trimmed, 6)),
-                }
-
-            Some(ReplDirective::Open) =>
-                return AcceptLineResult {
-                    session: session,
-                    action:  ReplLineAction::Open(extract_command_arg(trimmed, 5)),
-                }
-
-            _ =>
-                return AcceptLineResult { session: session, action: ReplLineAction::Continue }
+        return AcceptLineResult { session: session, action: ReplLineAction::Continue }
 
     // ── Empty line evaluates the buffer ──
     if trimmed == "":

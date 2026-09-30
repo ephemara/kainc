@@ -29,6 +29,7 @@ pub struct KcDiagnostic:
     error_kind:  String
     span_start:  Int
     span_end:    Int
+    source_line: String
 
 pub struct KcDiagnosticBag:
     errors:   Array<KcDiagnostic>
@@ -38,24 +39,30 @@ pub struct KcDiagnosticBag:
 pub fn kc_diag_bag_new() -> KcDiagnosticBag:
     return KcDiagnosticBag { errors: [], warnings: [], notes: [] }
 
+pub fn kc_diag_bag_add_error(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
+    let mut new_bag: KcDiagnosticBag = bag
+    push(new_bag.errors, d)
+    return new_bag
+
 pub fn kc_diag_bag_add(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
-    // Stub: return bag unchanged (avoids .push() codegen issue)
-    let _discard = d
-    return bag
+    return kc_diag_bag_add_error(bag, d)
 
 pub fn kc_diag_bag_has_errors(bag: KcDiagnosticBag) -> Bool:
     return len(bag.errors) > 0
 
-pub fn kc_diagnostic_new(severity: Int, message: String, kind: String, span_start: Int, span_end: Int) -> KcDiagnostic:
+pub fn kc_diagnostic_new(severity: Int, path: String, line_no: Int, col: Int,
+                          message: String, kind: String,
+                          span_start: Int, span_end: Int, source_line: String) -> KcDiagnostic:
     return KcDiagnostic {
         severity: severity,
-        file_path: "",
-        line_no: 0,
-        column: 0,
+        file_path: path,
+        line_no: line_no,
+        column: col,
         message: message,
         error_kind: kind,
         span_start: span_start,
         span_end: span_end,
+        source_line: source_line,
     }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -317,7 +324,7 @@ pub fn type_env_new() -> TypeEnv:
     }
     // Push global scope and register primitives
     let mut env1: TypeEnv = env
-    env1.scopes.push(0)
+    push(env1.scopes, 0)
 
     env1 = register_type(env1, "Unit", rt_unit())
     env1 = register_type(env1, "Bool", rt_bool())
@@ -342,8 +349,8 @@ pub fn type_env_new() -> TypeEnv:
 // ── Register a type in all_types ──
 pub fn register_type(env: TypeEnv, name: String, ty: ResolvedType) -> TypeEnv:
     let mut e: TypeEnv = env
-    e.all_types.push(ty)
-    e.all_type_names.push(name)
+    push(e.all_types, ty)
+    push(e.all_type_names, name)
     return e
 
 // ── Look up a named type ──
@@ -364,15 +371,15 @@ pub fn type_env_get(env: TypeEnv, idx: Int) -> ResolvedType:
 // ── Declare a named type ──
 pub fn declare_named_type(env: TypeEnv, name: String, ty: ResolvedType) -> TypeEnv:
     let mut e: TypeEnv = env
-    e.type_names.push(name)
-    e.type_defs.push(ty)
+    push(e.type_names, name)
+    push(e.type_defs, ty)
     e = register_type(e, name, ty)
     return e
 
 // ── Push/pop scope ──
 pub fn push_scope(env: TypeEnv) -> TypeEnv:
     let mut e: TypeEnv = env
-    e.scopes.push(len(e.val_names))
+    push(e.scopes, len(e.val_names))
     return e
 
 pub fn pop_scope(env: TypeEnv) -> TypeEnv:
@@ -383,17 +390,17 @@ pub fn pop_scope(env: TypeEnv) -> TypeEnv:
     var pop_n: Int = len(e.val_names) - start
     var i: Int = 0
     while i < pop_n:
-        e.val_names.pop()
-        e.val_types.pop()
+        pop(e.val_names)
+        pop(e.val_types)
         i = i + 1
-    e.scopes.pop()
+    pop(e.scopes)
     return e
 
 // ── Define a variable ──
 pub fn define_var(env: TypeEnv, name: String, ty: ResolvedType) -> TypeEnv:
     let mut e: TypeEnv = env
-    e.val_names.push(name)
-    e.val_types.push(ty)
+    push(e.val_names, name)
+    push(e.val_types, ty)
     return e
 
 // ── Look up a variable ──
@@ -408,8 +415,8 @@ pub fn lookup_var(env: TypeEnv, name: String) -> ResolvedType:
 // ── Add a type error ──
 pub fn type_error(env: TypeEnv, message: String, kind: String, span_start: Int, span_end: Int) -> TypeEnv:
     let mut e: TypeEnv = env
-    let d: KcDiagnostic = kc_diagnostic_new(0, message, kind, span_start, span_end)
-    e.errs = kc_diag_bag_add(e.errs, d)
+    let d: KcDiagnostic = kc_diagnostic_new(0, "", 0, 0, message, kind, span_start, span_end, "")
+    e.errs = kc_diag_bag_add_error(e.errs, d)
     return e
 
 // ═══════════════════════════════════════════════════════════════════
@@ -567,8 +574,9 @@ pub fn types_compatible(env: TypeEnv, expected: ResolvedType, actual: ResolvedTy
 // ═══════════════════════════════════════════════════════════════════
 
 pub struct TypedProgram:
-    items:   Array<TypedItem>
-    errors:  KcDiagnosticBag
+    items:     Array<TypedItem>
+    errors:    KcDiagnosticBag
+    ast_nodes: Array<AstNode>
 
 pub struct TypedItem:
     kind:          Int
@@ -608,14 +616,15 @@ pub fn typecheck(env: TypeEnv, program: AstProgram) -> TypedProgram:
     return TypedProgram {
         items: result.items,
         errors: result.env.errs,
+        ast_nodes: nodes,
     }
 
 pub fn init_skip_vectors(env: TypeEnv, count: Int) -> TypeEnv:
     let mut e: TypeEnv = env
     var i: Int = 0
     while i < count:
-        e.skip2.push(true)
-        e.skip3.push(true)
+        push(e.skip2, true)
+        push(e.skip3, true)
         i = i + 1
     return e
 
@@ -696,7 +705,7 @@ pub fn pass4_check(env: TypeEnv, nodes: Array<AstNode>) -> Pass4Result:
             let node: AstNode = nodes[i]
             let result: TypedItemAndEnv = check_item(e, node, i)
             e = result.env
-            items.push(result.item)
+            push(items, result.item)
         i = i + 1
     return Pass4Result { env: e, items: items }
 
@@ -833,10 +842,10 @@ pub fn check_function_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAn
         let ptype_ast: Int = data[params_start + 2 * pi + 1]
         let ptype: ResolvedType = resolve_type_in_env(e, ptype_ast)
         let pt_idx: Int = len(e.all_types)
-        e.all_types.push(ptype)
-        e.all_type_names.push("param_" + str(pname))
-        param_types.push(pt_idx)
-        fn_param_types_builder.push(ptype)
+        push(e.all_types, ptype)
+        push(e.all_type_names, "param_" + str(pname))
+        push(param_types, pt_idx)
+        push(fn_param_types_builder, ptype)
         pi = pi + 1
 
     // Resolve return type (defaults to Unit)
@@ -845,8 +854,8 @@ pub fn check_function_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAn
     else:
         rt_unit()
     let ret_idx: Int = len(e.all_types)
-    e.all_types.push(ret_type)
-    e.all_type_names.push("ret_" + str(name_idx))
+    push(e.all_types, ret_type)
+    push(e.all_type_names, "ret_" + str(name_idx))
 
     // Register function type in all_types
     let mut func_ty: ResolvedType = rt_zero()
@@ -856,8 +865,8 @@ pub fn check_function_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAn
     func_ty.fn_ret = ret_idx
     func_ty.fn_effects = eff_mask
     let fn_type_idx: Int = len(e.all_types)
-    e.all_types.push(func_ty)
-    e.all_type_names.push("fn_" + str(name_idx))
+    push(e.all_types, func_ty)
+    push(e.all_type_names, "fn_" + str(name_idx))
 
     // Push scope and register parameters
     e = push_scope(e)
@@ -1211,14 +1220,14 @@ pub fn check_struct_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAndE
             e = type_error(e, "duplicate field '" + str(fname) + "' in struct '" + str(name_idx) + "'",
                           "E0201", node.span_start, node.span_end)
         else:
-            seen_fields.push(fname)
+            push(seen_fields, fname)
 
         // Register field type in env
         let ftype_idx: Int = len(e.all_types)
-        e.all_types.push(ftype)
-        e.all_type_names.push("sf_" + str(name_idx) + "_" + str(fname))
-        field_names.push(fname)
-        field_types.push(ftype)
+        push(e.all_types, ftype)
+        push(e.all_type_names, "sf_" + str(name_idx) + "_" + str(fname))
+        push(field_names, fname)
+        push(field_types, ftype)
         fi = fi + 1
 
     // Register struct type with field count
@@ -1227,8 +1236,8 @@ pub fn check_struct_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAndE
     // (We store field_info start position since the struct type fields are limited)
     sty.array_len = fcount  // reuse array_len for field count
     let fmap_start: Int = len(e.all_types)
-    e.all_types.push(sty)
-    e.all_type_names.push("s_" + str(name_idx))
+    push(e.all_types, sty)
+    push(e.all_type_names, "s_" + str(name_idx))
 
     // Also register under the struct name for lookup
     let struct_name: String = "s_" + str(name_idx)
@@ -1281,8 +1290,8 @@ pub fn check_enum_item(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAndEnv
             let resolved_pt: ResolvedType = resolve_type_in_env(e, pt_ast)
             // Register the payload type in env
             let pt_idx: Int = len(e.all_types)
-            e.all_types.push(resolved_pt)
-            e.all_type_names.push("ev_" + str(name_idx) + "_" + str(v_name) + "_payload")
+            push(e.all_types, resolved_pt)
+            push(e.all_type_names, "ev_" + str(name_idx) + "_" + str(v_name) + "_payload")
         vi = vi + 1
 
     // Register enum type
@@ -1661,7 +1670,7 @@ pub fn resolve_type_ast(env: TypeEnv, type_node: AstNode) -> ResolvedType:
 pub fn push_type_slot(env: TypeEnv, label: String, ty: ResolvedType) -> Int:
     // We can't mutate env here (value semantics), so we compute what the
     // index WOULD be if we pushed. Callers receive this index and use it
-    // in their returned types. The type data is inlined in the ResolvedType
+    // in their returned  The type data is inlined in the ResolvedType
     // fields (name, inner_type as int indices). Since the constructors
     // (rt_array, rt_ptr, etc.) store -1 when we don't know the inner type
     // index, we work with -1 as "unresolved inner".

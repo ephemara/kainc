@@ -3,7 +3,7 @@
 //
 // Implements the L1 state authority layer (world + entangle) for the
 // self-host compiler. Typecheck: knc_check_world() validates world state
-// slots, surface declarations, and field types. knc_check_entangle()
+// slots, surface declarations, and field  knc_check_entangle()
 // validates endpoint paths, type-matches fields, and deduplicates.
 // Codegen: knc_compile_world_item() emits LLVM globals and init functions
 // for world instances. knc_compile_entangle_item() emits ABI registration
@@ -64,7 +64,7 @@ pub fn knc_check_world(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAndEnv
             field_names: [],
             field_types: [],
             fn_param_types: [],
-            fn_ret_type: types.rt_unit(),
+            fn_ret_type: rt_unit(),
         }
     }
 
@@ -106,7 +106,7 @@ pub fn knc_check_entangle(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAnd
             field_names: [],
             field_types: [],
             fn_param_types: [],
-            fn_ret_type: types.rt_unit(),
+            fn_ret_type: rt_unit(),
         }
     }
 

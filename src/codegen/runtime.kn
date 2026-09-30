@@ -25,7 +25,7 @@ pub const RT_STARTUP:         String = "startup"
 pub const RT_JSON:            String = "json"
 pub const RT_COLLECTIONS:     String = "collections"
 pub const RT_CONVERGE:        String = "converge"
-pub const RT_STRING:          String = "string"
+pub const RTCAT_STRING:          String = "string"
 
 // ── RuntimeFunction Struct ──
 // Describes a single runtime function that the LLVM codegen must emit as
@@ -102,11 +102,11 @@ pub fn runtime_table_init() -> RuntimeTable:
     push(funcs, rtf("to_string", "i8*", ["i64"], RT_CORE))
     push(funcs, rtf("to_string_f64", "i8*", ["double"], RT_CORE))
     push(funcs, rtf("to_string_bool", "i8*", ["i1"], RT_CORE))
-    push(funcs, rtf("str_concat", "i8*", ["i8*", "i8*"], RT_STRING))
-    push(funcs, rtf("str_concat3", "i8*", ["i8*", "i8*", "i8*"], RT_STRING))
-    push(funcs, rtf("str_concat4", "i8*", ["i8*", "i8*", "i8*", "i8*"], RT_STRING))
-    push(funcs, rtf("str_concat5", "i8*", ["i8*", "i8*", "i8*", "i8*", "i8*"], RT_STRING))
-    push(funcs, rtf("strlen", "i64", ["i8*"], RT_STRING))
+    push(funcs, rtf("str_concat", "i8*", ["i8*", "i8*"], RTCAT_STRING))
+    push(funcs, rtf("str_concat3", "i8*", ["i8*", "i8*", "i8*"], RTCAT_STRING))
+    push(funcs, rtf("str_concat4", "i8*", ["i8*", "i8*", "i8*", "i8*"], RTCAT_STRING))
+    push(funcs, rtf("str_concat5", "i8*", ["i8*", "i8*", "i8*", "i8*", "i8*"], RTCAT_STRING))
+    push(funcs, rtf("strlen", "i64", ["i8*"], RTCAT_STRING))
     push(funcs, rtf("clock_wrapper", "i64", [], RT_CORE))
 
     // ═══════════════════════════════════════════════════════════════
@@ -321,11 +321,11 @@ pub fn runtime_table_init() -> RuntimeTable:
     push(funcs, rtf("map_set_static_prehashed", "void", ["i64", "i8*", "i64", "i64", "i64", "i64"], RT_COLLECTIONS))
     push(funcs, rtf("map_get_prehashed", "i64", ["i64", "i8*", "i64", "i64", "i64"], RT_COLLECTIONS))
 
-    push(funcs, rtf("find_substring_from_known_lengths", "i64", ["i8*", "i64", "i8*", "i64", "i64"], RT_STRING))
-    push(funcs, rtf("memchr", "i8*", ["i8*", "i32", "i64"], RT_STRING))
-    push(funcs, rtf("memcmp", "i32", ["i8*", "i8*", "i64"], RT_STRING))
-    push(funcs, rtf("memcpy", "i8*", ["i8*", "i8*", "i64"], RT_STRING))
-    push(funcs, rtf("memset", "i8*", ["i8*", "i32", "i64"], RT_STRING))
+    push(funcs, rtf("find_substring_from_known_lengths", "i64", ["i8*", "i64", "i8*", "i64", "i64"], RTCAT_STRING))
+    push(funcs, rtf("memchr", "i8*", ["i8*", "i32", "i64"], RTCAT_STRING))
+    push(funcs, rtf("memcmp", "i32", ["i8*", "i8*", "i64"], RTCAT_STRING))
+    push(funcs, rtf("memcpy", "i8*", ["i8*", "i8*", "i64"], RTCAT_STRING))
+    push(funcs, rtf("memset", "i8*", ["i8*", "i32", "i64"], RTCAT_STRING))
 
     // ═══════════════════════════════════════════════════════════════
     // §5.11 LLVM Math Intrinsics

@@ -78,49 +78,21 @@ pub fn prefers_interpret_default_int(launcher: Int) -> Bool:
 // ═══════════════════════════════════════════════════════════════════
 
 pub fn detect_launcher_from_path(exe_path: String) -> Int:
+    // BOOTSTRAP: String subscript (exe_path[i]) segfaults in this snapshot
+    // (codegen: Method get not found / string treated as len-0 array).
+    // Identify the launcher via suffix match — no indexing needed.
     if exe_path == "":
         return LAUNCHER_UNKNOWN
-
-    // Find the last path separator
-    var last_sep: Int = -1
-    var i: Int = 0
-    while i < len(exe_path):
-        if exe_path[i] == "/" or exe_path[i] == "\\":
-            last_sep = i
-        i = i + 1
-
-    // Get the filename (after last separator)
-    let filename: String = text_substring_string(
-        exe_path,
-        last_sep + 1,
-        len(exe_path) - last_sep - 1,
-    )
-
-    // Remove extension — find last dot
-    var dot_pos: Int = -1
-    i = 0
-    while i < len(filename):
-        if filename[i] == ".":
-            dot_pos = i
-        i = i + 1
-
-    let stem: String = if dot_pos >= 0:
-        text_substring_string(filename, 0, dot_pos)
-    else:
-        filename
-
-    let lower_stem: String = text_lower(stem)
-
-    if lower_stem == "kn":
+    if text_contains_string(exe_path, "kainc"):
         return LAUNCHER_KN
-    elif lower_stem == "blade":
+    if text_ends_with_string(exe_path, "kn.exe") or text_ends_with_string(exe_path, "kn"):
+        return LAUNCHER_KN
+    if text_ends_with_string(exe_path, "blade.exe") or text_ends_with_string(exe_path, "blade"):
         return LAUNCHER_BLADE
-    elif lower_stem == "kain":
+    if text_ends_with_string(exe_path, "kain.exe") or text_ends_with_string(exe_path, "kain"):
         return LAUNCHER_KAIN
-    else:
-        return LAUNCHER_UNKNOWN
+    return LAUNCHER_UNKNOWN
 
-// ═══════════════════════════════════════════════════════════════════
 // should_show_launcher_menu — only for kn with no command or input
 // ═══════════════════════════════════════════════════════════════════
 

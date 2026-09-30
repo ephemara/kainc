@@ -278,7 +278,7 @@ pub fn jit_compile_block(bytecode: Array<Int>, ip_start: Int, ip_end: Int) -> Ar
     var native_offsets: Array<Int> = []
     var ni: Int = 0
     while ni < bc_len:
-        native_offsets.push(-1)
+        push(native_offsets, -1)
         ni = ni + 1
 
     var fixups: Array<FixupEntry> = []
@@ -391,7 +391,7 @@ pub fn jit_compile_block(bytecode: Array<Int>, ip_start: Int, ip_end: Int) -> Ar
                     // Forward jump — placeholder + fixup
                     let patch_start: Int = len(code_arr) + 1  // +1 for 0xE9
                     code_arr = emit_jmp_placeholder(code_arr)
-                    fixups.push(FixupEntry { patch_at: patch_start, target_label: target, kind: 0 })
+                    push(fixups, FixupEntry { patch_at: patch_start, target_label: target, kind: 0 })
             ip = ip + 1
 
         // ── OP_JZ (13) — pop, jump if zero ──────────────────────────
@@ -412,7 +412,7 @@ pub fn jit_compile_block(bytecode: Array<Int>, ip_start: Int, ip_end: Int) -> Ar
                 else:
                     let patch_start: Int = len(code_arr) + 2
                     code_arr = emit_jcc_placeholder(code_arr, 0x84)
-                    fixups.push(FixupEntry { patch_at: patch_start, target_label: target, kind: 1 })
+                    push(fixups, FixupEntry { patch_at: patch_start, target_label: target, kind: 1 })
             ip = ip + 1
 
         // ── OP_ADD (14) — addition ──────────────────────────────────
@@ -489,7 +489,7 @@ pub fn jit_compile_block(bytecode: Array<Int>, ip_start: Int, ip_end: Int) -> Ar
                 else:
                     let patch_start: Int = len(code_arr) + 2
                     code_arr = emit_jcc_placeholder(code_arr, 0x88)
-                    fixups.push(FixupEntry { patch_at: patch_start, target_label: target, kind: 1 })
+                    push(fixups, FixupEntry { patch_at: patch_start, target_label: target, kind: 1 })
             ip = ip + 1
 
         // ── Unknown opcode — skip ───────────────────────────────────

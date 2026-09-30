@@ -96,17 +96,30 @@ pub struct MonomorphizedProgram:
     mangled_map: Array<String>
 
 pub struct BuildConfig:
-    name:        String
-    target:      String
-    profile:     String
-    entry:       String
-    source_root: String
-    output:      String
+    name:         String
+    target:       String
+    profile:      String
+    optimize:     Bool
+    lto:          String
+    entry:        String
+    source_root:  String
+    deps:         String
+    output:       String
+    runtime:      String
+    linker:       String
+    linker_flags: String
+    cc:           String
+    cc_flags:     String
+    test_root:    String
+    doc_root:     String
 
 pub fn build_config_default() -> BuildConfig:
     return BuildConfig {
         name: "kainc", target: "llvm", profile: "debug",
-        entry: "src/main.kn", source_root: "src/", output: "kainc",
+        optimize: false, lto: "none",
+        entry: "src/main.kn", source_root: "src/", deps: "", output: "kainc",
+        runtime: "kain_runtime", linker: "clang", linker_flags: "",
+        cc: "clang", cc_flags: "", test_root: "", doc_root: "",
     }
 
 // ── Forward stub types for upstream modules ──
@@ -253,11 +266,7 @@ pub fn driver_session_compile(session: DriverSession, source: String,
 
     // ── Phase 1: Lex ──
     r = emit_progress(r, PHASE_LEX)
-    let lexer_state: KcLexerState = lexer_new(r.source, r.file_path)
-    let toks_result: KcLexTokensResult = lexer_tokenize_all(lexer_state)
-    if kc_diag_bag_has_errors(toks_result.errors):
-        return compile_result_error(toks_result.errors)
-    let tokens: Array<KcToken> = toks_result.tokens
+    let tokens: Array<Token> = lexer_tokenize_all(r.source, r.file_path)
 
     // ── Phase 2: Parse ──
     r = emit_progress(r, PHASE_PARSE)
@@ -299,12 +308,9 @@ pub fn driver_session_check(session: DriverSession, source: String,
     r.source = source
     r.file_path = source_path
 
-    let lexer_state: KcLexerState = lexer_new(r.source, r.file_path)
-    let toks_result: KcLexTokensResult = lexer_tokenize_all(lexer_state)
-    if kc_diag_bag_has_errors(toks_result.errors):
-        return KcCheckResult { success: false, diagnostics: toks_result.errors }
+    let tokens: Array<Token> = lexer_tokenize_all(r.source, r.file_path)
 
-    let parser_state: ParserState = parser_new(toks_result.tokens, r.file_path, r.source)
+    let parser_state: ParserState = parser_new(tokens, r.file_path, r.source)
     let prog_result: ProgResult = parse(parser_state)
     if kc_diag_bag_has_errors(prog_result.state.errors):
         return KcCheckResult { success: false, diagnostics: prog_result.state.errors }
@@ -476,7 +482,7 @@ pub fn compile_workspace(ws_root: String, target: String) -> CompileResult with 
                                 fname = fname + trimmed[fi]
                                 fi = fi + 1
                             if len(fname) > 0:
-                                source_files.push(fname)
+                                push(source_files, fname)
 
                 line_start = char_idx + 1
             char_idx = char_idx + 1
@@ -500,7 +506,7 @@ pub fn compile_workspace(ws_root: String, target: String) -> CompileResult with 
                     if len(fpath) > 3:
                         let ext_start: Int = len(fpath) - 3
                         if fpath[ext_start] == "." and fpath[ext_start + 1] == "k" and fpath[ext_start + 2] == "n":
-                            source_files.push(fpath)
+                            push(source_files, fpath)
                     line_start2 = char_idx2 + 1
                 char_idx2 = char_idx2 + 1
 

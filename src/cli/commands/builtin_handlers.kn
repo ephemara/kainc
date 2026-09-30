@@ -177,11 +177,11 @@ pub fn dispatch_handler(
 ) -> Int with IO:
     let handler: BuiltinHandler = parse_handler(handler_name)
     match handler:
-        BuiltinHandler::Check  => return orchestrator.orch_check_cli(input_path)
-        BuiltinHandler::Build  => return orchestrator.orch_build_cli(input_path, target, profile, "")
-        BuiltinHandler::Run    => return orchestrator.orch_run_cli(input_path)
-        BuiltinHandler::Test   => return orchestrator.orch_test_cli(input_path)
-        BuiltinHandler::SelfHost => return orchestrator.orch_selfhost_cli(input_path, false)
+        BuiltinHandler::Check  => return orch_check_cli(input_path)
+        BuiltinHandler::Build  => return orch_build_cli(input_path, target, profile, "")
+        BuiltinHandler::Run    => return orch_run_cli(input_path)
+        BuiltinHandler::Test   => return orch_test_cli(input_path)
+        BuiltinHandler::SelfHost => return orch_selfhost_cli(input_path, false)
 
         BuiltinHandler::Fmt    => return dispatch_fmt(input_path)
         BuiltinHandler::Doctor => return dispatch_doctor()
@@ -231,16 +231,16 @@ pub fn dispatch_handler(
 // ═══════════════════════════════════════════════════════════════════
 
 pub fn dispatch_check(input_path: String) -> Int with IO:
-    return orchestrator.orch_check_cli(input_path)
+    return orch_check_cli(input_path)
 
 pub fn dispatch_build(input_path: String, target: String, profile: String) -> Int with IO:
-    return orchestrator.orch_build_cli(input_path, target, profile, "")
+    return orch_build_cli(input_path, target, profile, "")
 
 pub fn dispatch_run(input_path: String) -> Int with IO:
-    return orchestrator.orch_run_cli(input_path)
+    return orch_run_cli(input_path)
 
 pub fn dispatch_test(input_path: String) -> Int with IO:
-    return orchestrator.orch_test_cli(input_path)
+    return orch_test_cli(input_path)
 
 pub fn dispatch_fmt(input_path: String) -> Int with IO:
     println("[handlers] fmt: " + input_path + " — STUB (not yet implemented)")
@@ -254,7 +254,7 @@ pub fn dispatch_doctor() -> Int with IO:
     return 0
 
 pub fn dispatch_selfhost(input_path: String) -> Int with IO:
-    return orchestrator.orch_selfhost_cli(input_path, false)
+    return orch_selfhost_cli(input_path, false)
 
 pub fn dispatch_repl() -> Int with IO:
     // REPL requires terminal module which depends on keyboard input.

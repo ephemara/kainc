@@ -468,7 +468,7 @@ pub fn locals_find(gen: LlvmGenerator, name: String) -> Int:
 pub fn locals_add(gen: LlvmGenerator, name: String, reg: String, ty: String) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
     let entry: LocalEntry = LocalEntry { name: name, reg: reg, ty: ty }
-    r.locals.push(entry)
+    push(r.locals, entry)
     return r
 
 pub fn locals_get_reg(gen: LlvmGenerator, name: String) -> String:
@@ -494,7 +494,7 @@ pub fn locals_get_ty(gen: LlvmGenerator, name: String) -> String:
 pub fn struct_defs_register(gen: LlvmGenerator, name: String, fields: String) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
     let entry: StructEntry = StructEntry { name: name, fields: fields }
-    r.struct_defs.push(entry)
+    push(r.struct_defs, entry)
     return r
 
 pub fn struct_defs_find(gen: LlvmGenerator, name: String) -> String:
@@ -512,13 +512,13 @@ pub fn struct_defs_find(gen: LlvmGenerator, name: String) -> String:
 pub fn loop_push(gen: LlvmGenerator, continue_label: String, break_label: String) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
     let label: LoopLabel = LoopLabel { continue_label: continue_label, break_label: break_label }
-    r.loop_stack.push(label)
+    push(r.loop_stack, label)
     return r
 
 pub fn loop_pop(gen: LlvmGenerator) -> LlvmGenerator:
     let mut r: LlvmGenerator = gen
     if len(r.loop_stack) > 0:
-        r.loop_stack.pop()
+        pop(r.loop_stack)
     return r
 
 pub fn loop_continue_label(gen: LlvmGenerator) -> String:
@@ -788,8 +788,8 @@ pub fn emit_global_strings(gen: LlvmGenerator,
 
             if found == false and str_content != "":
                 let s_gn: String = "@.str." + str(len(string_pool))
-                string_pool.push(str_content)
-                string_global_names.push(s_gn)
+                push(string_pool, str_content)
+                push(string_global_names, s_gn)
         ai = ai + 1
 
     // Store string pool entries in the generator for expression compilation
@@ -800,7 +800,7 @@ pub fn emit_global_strings(gen: LlvmGenerator,
             content:     string_pool[ssi],
             length:      len(string_pool[ssi]),
         }
-        r.string_consts.push(entry)
+        push(r.string_consts, entry)
         ssi = ssi + 1
 
     // Emit string globals
@@ -1918,12 +1918,12 @@ pub fn compile_match_textual(gen: LlvmGenerator,
         let body_lbl_res: GenResult = next_label(g)
         g = body_lbl_res.gen
         let body_lbl: String = body_lbl_res.reg
-        arm_block_labels.push(body_lbl)
+        push(arm_block_labels, body_lbl)
 
         let next_lbl_res: GenResult = next_label(g)
         g = next_lbl_res.gen
         let next_lbl: String = next_lbl_res.reg
-        arm_nexts.push(next_lbl)
+        push(arm_nexts, next_lbl)
 
         ai = ai + 1
 
@@ -1970,12 +1970,12 @@ pub fn compile_match_textual(gen: LlvmGenerator,
             let arm_result: GenTypeResult = compile_expr_textual(g, body_idx, ast_nodes)
             g = arm_result.gen
             result_ty = arm_result.llvm_type
-            arm_results.push(arm_result.reg)
+            push(arm_results, arm_result.reg)
         else:
             let nr: GenResult = next_reg(g)
             g = nr.gen
             g = emit_raw(g, "  " + nr.reg + " = add i64 0, 0\n")
-            arm_results.push(nr.reg)
+            push(arm_results, nr.reg)
 
         g.indent_level = saved_indent + 1
         g = emit_raw(g, "br label %" + merge_lbl + "\n")

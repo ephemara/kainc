@@ -83,13 +83,13 @@ pub fn kc_diag_bag_new() -> KcDiagnosticBag:
 // Return a new bag with the error added
 pub fn kc_diag_bag_add_error(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
     let mut new_bag: KcDiagnosticBag = bag
-    new_bag.errors.push(d)
+    push(new_bag.errors, d)
     return new_bag
 
 // Return a new bag with the warning added
 pub fn kc_diag_bag_add_warning(bag: KcDiagnosticBag, d: KcDiagnostic) -> KcDiagnosticBag:
     let mut new_bag: KcDiagnosticBag = bag
-    new_bag.warnings.push(d)
+    push(new_bag.warnings, d)
     return new_bag
 
 pub fn kc_diag_bag_has_errors(bag: KcDiagnosticBag) -> Bool:

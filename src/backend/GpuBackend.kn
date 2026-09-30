@@ -44,10 +44,10 @@ pub const KNC_GPU_TYPE_SAMPLER2D:      String = "Sampler2D"
 
 // ── knc_is_gpu_compatible_type ──
 pub fn knc_is_gpu_compatible_type(env: TypeEnv, ty: ResolvedType) -> Bool:
-    if ty.kind == types.RT_FLOAT or ty.kind == types.RT_INT:
+    if ty.kind == RT_FLOAT or ty.kind == RT_INT:
         return true
-    if ty.kind == types.RT_STRUCT:
-        let name: String = types.strtab_lookup_name(env, ty.name)
+    if ty.kind == RT_STRUCT:
+        let name: String = strtab_lookup_name(env, ty.name)
         if name == KNC_GPU_TYPE_VEC2 or name == KNC_GPU_TYPE_VEC3 or name == KNC_GPU_TYPE_VEC4:
             return true
         if name == KNC_GPU_TYPE_IVEC2 or name == KNC_GPU_TYPE_UVEC2 or name == KNC_GPU_TYPE_UVEC3:
@@ -60,8 +60,8 @@ pub fn knc_is_gpu_compatible_type(env: TypeEnv, ty: ResolvedType) -> Bool:
 pub fn knc_is_gpu_uniform_type(env: TypeEnv, ty: ResolvedType) -> Bool:
     if knc_is_gpu_compatible_type(env, ty):
         return true
-    if ty.kind == types.RT_GENERIC:
-        let name: String = types.strtab_lookup_name(env, ty.name)
+    if ty.kind == RT_GENERIC:
+        let name: String = strtab_lookup_name(env, ty.name)
         if name == KNC_GPU_TYPE_STORAGE_BUFFER or name == KNC_GPU_TYPE_SAMPLER2D:
             return true
     return false
@@ -77,12 +77,12 @@ pub fn knc_check_shader(env: TypeEnv, node: AstNode, idx: Int) -> TypedItemAndEn
         env: env,
         item: TypedItem {
             kind: AST_ITEM_SHADER, name: "shd_" + str(name_idx), name_idx: name_idx,
-            resolved_type: types.rt_unit(), ast_index: idx,
+            resolved_type: rt_unit(), ast_index: idx,
             effects: EFF_GPU,
             field_names: [],
             field_types: [],
             fn_param_types: [],
-            fn_ret_type: types.rt_unit(),
+            fn_ret_type: rt_unit(),
         }
     }
 
@@ -92,21 +92,21 @@ pub fn knc_check_dispatch_stmt(env: TypeEnv, node: AstNode, idx: Int) -> TypedIt
     let has_unsafe: Bool = (env.crnt_effects and EFF_UNSAFE) != 0
     let mut e: TypeEnv = env
     if !has_gpu:
-        e = types.type_error(e, "dispatch requires GPU effect", "ERR_MISSING_GPU_EFFECT",
+        e = type_error(e, "dispatch requires GPU effect", "ERR_MISSING_GPU_EFFECT",
                           node.span_start, node.span_end)
     if !has_unsafe:
-        e = types.type_error(e, "dispatch requires Unsafe effect", "ERR_MISSING_UNSAFE_EFFECT",
+        e = type_error(e, "dispatch requires Unsafe effect", "ERR_MISSING_UNSAFE_EFFECT",
                           node.span_start, node.span_end)
     return TypedItemAndEnv {
         env: e,
         item: TypedItem {
             kind: AST_STMT_DISPATCH, name: "dispatch_" + str(idx), name_idx: -1,
-            resolved_type: types.rt_unit(), ast_index: idx,
+            resolved_type: rt_unit(), ast_index: idx,
             effects: EFF_GPU or EFF_UNSAFE,
             field_names: [],
             field_types: [],
             fn_param_types: [],
-            fn_ret_type: types.rt_unit(),
+            fn_ret_type: rt_unit(),
         }
     }
 

@@ -159,7 +159,7 @@ pub fn extract_array_values(raw: String) -> Array<String>:
     while pi < len(parts):
         let part: String = text_trim_string(parts[pi])
         if len(part) >= 2 and part[0] == "\"" and part[len(part) - 1] == "\"":
-            result.push(text_substring_string(part, 1, len(part) - 2))
+            push(result, text_substring_string(part, 1, len(part) - 2))
         pi = pi + 1
     return result
 
@@ -196,7 +196,7 @@ pub fn parse_toml_registry(text: String, source_file: String) -> CommandRegistry
     var li: Int = 0
     while li < len(raw_lines):
         if is_comment_or_blank(raw_lines[li]) == false:
-            lines.push(text_trim_string(raw_lines[li]))
+            push(lines, text_trim_string(raw_lines[li]))
         li = li + 1
 
     let mut registry: CommandRegistry = command_registry_new()
@@ -214,12 +214,12 @@ pub fn parse_toml_registry(text: String, source_file: String) -> CommandRegistry
         if ln == "[pack]":
             // Finalize previous command
             if in_commands and current_cmd.id != "":
-                registry.commands.push(current_cmd)
+                push(registry.commands, current_cmd)
                 current_cmd = command_spec_new()
 
             // Save previous pack if any
             if in_pack and current_pack.id != "":
-                registry.packs.push(current_pack)
+                push(registry.packs, current_pack)
 
             in_pack = true
             in_commands = false
@@ -228,7 +228,7 @@ pub fn parse_toml_registry(text: String, source_file: String) -> CommandRegistry
         elif ln == "[[commands]]":
             // Finalize previous command
             if in_commands and current_cmd.id != "":
-                registry.commands.push(current_cmd)
+                push(registry.commands, current_cmd)
 
             in_pack = false
             in_commands = true
@@ -299,7 +299,7 @@ pub fn parse_toml_registry(text: String, source_file: String) -> CommandRegistry
 
     // ── Finalize trailing entries ──
     if in_commands and current_cmd.id != "":
-        registry.commands.push(current_cmd)
+        push(registry.commands, current_cmd)
     if in_pack and current_pack.id != "":
         // Only add pack if not already added (dedup by id)
         var found: Bool = false
@@ -310,7 +310,7 @@ pub fn parse_toml_registry(text: String, source_file: String) -> CommandRegistry
                 pi = len(registry.packs)  // break
             pi = pi + 1
         if found == false:
-            registry.packs.push(current_pack)
+            push(registry.packs, current_pack)
 
     return registry
 
@@ -330,12 +330,12 @@ pub fn merge_registries(into: CommandRegistry, from: CommandRegistry) -> Command
                 ri = len(result.packs)  // break
             ri = ri + 1
         if found == false:
-            result.packs.push(from.packs[pi])
+            push(result.packs, from.packs[pi])
         pi = pi + 1
 
     var ci: Int = 0
     while ci < len(from.commands):
-        result.commands.push(from.commands[ci])
+        push(result.commands, from.commands[ci])
         ci = ci + 1
 
     return result
@@ -426,7 +426,7 @@ pub fn list_by_tag(registry: CommandRegistry, tag: String) -> Array<CommandSpec>
         var ti: Int = 0
         while ti < len(cmd.tags):
             if cmd.tags[ti] == tag:
-                result.push(cmd)
+                push(result, cmd)
                 ti = len(cmd.tags)  // break
             ti = ti + 1
         ci = ci + 1
@@ -444,7 +444,7 @@ pub fn list_by_bin(registry: CommandRegistry, bin_name: String) -> Array<Command
         var bi: Int = 0
         while bi < len(cmd.bins):
             if cmd.bins[bi] == bin_name:
-                result.push(cmd)
+                push(result, cmd)
                 bi = len(cmd.bins)  // break
             bi = bi + 1
         ci = ci + 1

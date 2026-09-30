@@ -39,7 +39,7 @@ pub fn jit_path_available(path: String) -> Bool:
 //
 //  Returns: result from executing the bytecode (RAX value after return)
 
-pub fn jit_execute(bytecode: Array<Int>, len: Int, path: String) -> Int with Unsafe:
+pub fn jit_execute(bytecode: Array<Int>, bc_len: Int, path: String) -> Int with Unsafe:
     // Auto-select: try OrcJIT first, fall back to x86-64 direct
     if path == "auto" or path == "orc":
         let orc_state: OrcJitState = jit_orc_init()
@@ -52,19 +52,19 @@ pub fn jit_execute(bytecode: Array<Int>, len: Int, path: String) -> Int with Uns
             // Fall through to Path A
 
     // Path A: x86-64 direct machine code emission (always available)
-    let code: Array<Int> = jit_x86.jit_compile_block(bytecode, 0, len)
-    return jit_metal.jit_compile_and_run(code, len(code))
+    let code: Array<Int> = jit_compile_block(bytecode, 0, bc_len)
+    return jit_compile_and_run(code, len(code))
 
 // ── Execute bytecode with cache integration ─────────────────────────────────
 //
 //  Tries cache first; on miss, compiles via Path A, registers in cache,
 //  and executes. Returns the result.
 
-pub fn jit_execute_cached(bytecode: Array<Int>, len: Int, cache: CacheStore) -> Int with Unsafe:
+pub fn jit_execute_cached(bytecode: Array<Int>, bc_len: Int, cache: CacheStore) -> Int with Unsafe:
     // Simple hash: sum of first few bytes
     var hash: Int = 0
     var hi: Int = 0
-    while hi < len and hi < 8:
+    while hi < bc_len and hi < 8:
         hash = (hash * 31) + bytecode[hi]
         hi = hi + 1
 
@@ -72,11 +72,11 @@ pub fn jit_execute_cached(bytecode: Array<Int>, len: Int, cache: CacheStore) -> 
     let cached_ptr: ptr<Byte> = cache_store_lookup(cache, hash)
     if ptr_to_int(cached_ptr) != 0:
         // Cache hit — execute directly
-        return jit_metal.call_jit_code(cached_ptr)
+        return call_jit_code(cached_ptr)
 
     // Cache miss — compile
-    let code: Array<Int> = jit_x86.jit_compile_block(bytecode, 0, len)
-    let result: Int = jit_metal.jit_compile_and_run(code, len(code))
+    let code: Array<Int> = jit_compile_block(bytecode, 0, bc_len)
+    let result: Int = jit_compile_and_run(code, len(code))
 
     // TODO: Register in cache (requires saving code_ptr from jit_compile_and_run)
     // For now, just return result. The full cache integration will be
@@ -106,5 +106,5 @@ pub fn jit_execute_llvm_module(module: ptr<Byte>, entry: String) -> Int with Uns
 // ── Convenience: compile and execute raw bytecode via Path A ─────────────────
 
 pub fn jit_run(bytecode: Array<Int>) -> Int with Unsafe:
-    let code: Array<Int> = jit_x86.jit_compile_block(bytecode, 0, len(bytecode))
-    return jit_metal.jit_compile_and_run(code, len(code))
+    let code: Array<Int> = jit_compile_block(bytecode, 0, len(bytecode))
+    return jit_compile_and_run(code, len(code))

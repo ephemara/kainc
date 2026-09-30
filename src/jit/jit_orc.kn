@@ -55,7 +55,7 @@ pub fn jit_orc_init() -> OrcJitState:
     // the native target + OrcJIT instance.
     let mut state: OrcJitState = OrcJitState {
         initialized: false,
-        jit_handle: jit_metal.null_ptr_byte(),
+        jit_handle: null_ptr_byte(),
         has_llvm: false,
     }
 
@@ -99,13 +99,13 @@ pub fn jit_orc_compile_module(jit: ptr<Byte>, module: ptr<Byte>) -> Bool with Un
 //        let addr: Int = 0
 //        let status: Int = llvm_orc::LLVMOrcLLJITLookup(jit, bitcast(addr), symbol)
 //        if status != 0:
-//            return jit_metal.null_ptr_byte()
+//            return null_ptr_byte()
 //        return int_to_ptr(addr, "ptr<Byte>")
 
 pub fn jit_orc_lookup(jit: ptr<Byte>, symbol: String) -> ptr<Byte> with Unsafe:
     // STUB: OrcJIT symbol lookup not yet wired
     // TODO: Wire llvm_orc::LLVMOrcLLJITLookup
-    return jit_metal.null_ptr_byte()
+    return null_ptr_byte()
 
 // ── Compile-and-call flow ───────────────────────────────────────────────────
 //
@@ -116,7 +116,7 @@ pub fn jit_orc_lookup(jit: ptr<Byte>, symbol: String) -> ptr<Byte> with Unsafe:
 //    1. Verify module with LLVMVerifyModule
 //    2. Add module to LLJIT with LLVMOrcLLJITAddLLVMIRModule
 //    3. Look up entry symbol with LLVMOrcLLJITLookup
-//    4. Execute via jit_metal.call_jit_code(code_ptr)
+//    4. Execute via call_jit_code(code_ptr)
 
 pub fn jit_orc_compile_and_call(state: OrcJitState, module: ptr<Byte>, entry_name: String) -> Int with Unsafe:
     // STUB: returns -1 until OrcJIT is wired
@@ -126,7 +126,7 @@ pub fn jit_orc_compile_and_call(state: OrcJitState, module: ptr<Byte>, entry_nam
     //   if not ok: return -1
     //   let code_ptr = jit_orc_lookup(state.jit_handle, entry_name)
     //   if ptr_to_int(code_ptr) == 0: return -1
-    //   return jit_metal.call_jit_code(code_ptr)
+    //   return call_jit_code(code_ptr)
     return -1
 
 // ── Cleanup ─────────────────────────────────────────────────────────────────

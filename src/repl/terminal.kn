@@ -63,10 +63,7 @@ pub fn repl_handle_theme(arg: Option<String>) -> Bool with IO:
     if arg == none:
         println("theme")
     else:
-        let name: String = match arg:
-            Some(v) => v
-            _ => ""
-        println("theme " + name)
+        println("theme set (stub)")
     return true
 
 /// Handle .open command.
@@ -74,10 +71,7 @@ pub fn repl_handle_open(arg: Option<String>) -> Bool with IO:
     if arg == none:
         stderr_write(" open failed: path required for .open\n")
     else:
-        let path: String = match arg:
-            Some(v) => v
-            _ => ""
-        println("opened " + path)
+        println("opened (stub)")
     return true
 
 /// Run the text-mode REPL.
@@ -99,55 +93,11 @@ pub fn repl_handle_open(arg: Option<String>) -> Bool with IO:
 ///   Continue — accumulate, continue looping
 pub fn run_terminal_repl(config: ReplTerminalConfig) -> Bool with IO:
     println(config.metadata.banner())
-
-    var sess: ReplSession = session_new()
-    var raw: String = ""
-
-    loop:
-        // Print prompt (no newline)
-        stdout_write(session_prompt(sess))
-
-        // Read one line from stdin
-        raw = read_line()
-
-        // EOF detection
-        if raw == "":
-            let finish: FinishInputResult = session_finish_input(sess)
-            if finish.source != none:
-                let source_text: String = match finish.source:
-                    Some(src) => src
-                    _ => ""
-                println("[repl] evaluate on EOF (stub):")
-                println(source_text)
-            println("")
-            return true
-
-        // Process the line through the session
-        let result: AcceptLineResult = session_accept_raw_line(sess, raw)
-        sess = result.session
-        let action: ReplLineAction = result.action
-
-        // Check Exit first — simple equality, no pattern binding needed
-        if action == ReplLineAction::Exit:
-            println("")
-            return true
-
-        // Dispatch remaining actions. All arms return Bool.
-        let _dispatched: Bool = match action:
-            ReplLineAction::Help =>
-                repl_handle_help()
-            ReplLineAction::Clear =>
-                true
-            ReplLineAction::Continue =>
-                true
-            ReplLineAction::Evaluate(src) =>
-                repl_handle_evaluate(src)
-            ReplLineAction::Theme(arg) =>
-                repl_handle_theme(arg)
-            ReplLineAction::Open(arg) =>
-                repl_handle_open(arg)
-            _ =>
-                true
+    // BOOTSTRAP STUB: interactive loop deferred — full REPL needs codegen
+    // support for Option unwrap + payload-variant match (filed as blocker).
+    // check/build/run/test paths do not need the interactive loop.
+    println("[repl] interactive mode deferred in bootstrap (stub)")
+    return true
 
 // ═══════════════════════════════════════════════════════════════════
 //  Tests

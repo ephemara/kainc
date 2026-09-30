@@ -263,7 +263,7 @@ pub fn strtab_intern(table: StringTable, s: String) -> StrTabResult:
             return StrTabResult { table: new_table, index: i }
         i = i + 1
     // Not found — push new entry
-    new_table.strings.push(s)
+    push(new_table.strings, s)
     return StrTabResult { table: new_table, index: len(new_table.strings) - 1 }
 
 // Retrieve a string by index
