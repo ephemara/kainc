@@ -1080,7 +1080,10 @@ pub fn get_precedence(kind: Int) -> Int:
     if kind == TOKEN_SLASH:       return 10
     if kind == TOKEN_PERCENT:     return 10
     if kind == TOKEN_POWER:       return 11
-    return 0
+    // Unknown/non-operator tokens MUST sort below every valid min_prec
+    // (parse_binary starts at 0). Returning 0 here made EOF look like an
+    // operator and looped forever — the Step-2 hang.
+    return -1
 
 pub fn get_binary_op(kind: Int) -> Int:
     if kind == TOKEN_PLUS:        return BINOP_ADD
@@ -1703,7 +1706,7 @@ pub fn parse_primary(st: ParserState) -> ParseResult:
     // struct literal: StructName { ... }
     if kind == TOKEN_IDENT:
         let pk: Token = parser_peek(st, 1)
-        if pk.kind == TOKEN_LBRACE and char_at(tok.text, 0) >= "A" and char_at(tok.text, 0) <= "Z":
+        if pk.kind == TOKEN_LBRACE and text_byte_at(text_from(tok.text), 0) >= 65 and text_byte_at(text_from(tok.text), 0) <= 90:
             return parse_struct_literal(st)
 
     // Unknown primary
@@ -1732,8 +1735,11 @@ pub fn parse_block_expr(st: ParserState) -> ParseResult:
     if parser_check(cur, TOKEN_RBRACE):
         cur = parser_advance(cur)
     let end_off: Int = parser_current(cur).byte_offset
+    // Block data is a PURE index list (no count prefix): check_block_body,
+    // compile_block_textual and infer_block_type all walk every slot as a
+    // node index. The old count-first layout shifted every statement by
+    // one and dropped the last — silent pass on trailing statements.
     let mut data: Array<Int> = []
-    push(data, len(stmt_idxs))
     var si: Int = 0
     while si < len(stmt_idxs):
         push(data, stmt_idxs[si])
@@ -1919,11 +1925,18 @@ pub fn parse_struct_literal(st: ParserState) -> ParseResult:
 // ── Block or single expression ──
 
 pub fn parse_block_or_expr(st: ParserState) -> ParseResult:
-    let tok: Token = parser_current(st)
+    // After ':' the lexer emits NEWLINE then INDENT for block bodies.
+    // Skip newlines first; otherwise a block is misread as a bare
+    // expression, body_idx goes -1, and statements leak to top level
+    // (the Step-2 silent-pass: nothing was ever typechecked).
+    let mut cur: ParserState = st
+    while parser_check(cur, TOKEN_NEWLINE):
+        cur = parser_advance(cur)
+    let tok: Token = parser_current(cur)
     if tok.kind == TOKEN_INDENT:
-        let mut cur: ParserState = parser_advance(st)
+        cur = parser_advance(cur)
         return parse_block_body(cur)
-    return parse_expr(st)
+    return parse_expr(cur)
 
 pub fn parse_block_body(st: ParserState) -> ParseResult:
     let sp: SpanPair = parser_current_span(st)

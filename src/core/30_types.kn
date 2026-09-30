@@ -558,12 +558,16 @@ pub struct Pass4Result:
 // 4-PASS TYPECHECK PIPELINE
 // ═══════════════════════════════════════════════════════════════════
 
-pub fn typecheck(env: TypeEnv, program: AstProgram) -> TypedProgram:
+pub fn typecheck(env: TypeEnv, program: AstProgram, strtab: Array<String>) -> TypedProgram:
     let nodes: Array<AstNode> = program.nodes
     let n: Int = len(nodes)
     var env1: TypeEnv = init_skip_vectors(env, n)
     // Store AST nodes in env for resolution during checking
     env1.ast_nodes = nodes
+    // Adopt the parser string table: name indices in type AST nodes live
+    // in the parser namespace. Without this every named annotation
+    // resolves to UNKNOWN and all annotation checks silently pass.
+    env1.strtab = strtab
     env1 = pass1_predeclare(env1, nodes)
     env1 = pass2_register(env1, nodes)
     env1 = pass3_re_register(env1, nodes)
@@ -944,10 +948,14 @@ pub fn check_let_stmt(env: TypeEnv, node: AstNode, caller_eff: Int) -> TypeEnv:
     if dlen < 1:
         return e
 
-    // AST_STMT_LET layout: data[0] = name_idx, data[1] = type_ast (-1 if none), data[2] = value expr idx
+    // AST_STMT_LET layout (must match parser): data[0] = name_idx,
+    // data[1] = is_mut flag, data[2] = type_ast (-1 if none),
+    // data[3] = value expr idx. The old 3-slot read compared the
+    // annotation against the WRONG node (silent pass on everything).
     let name_idx: Int = data[0]
-    let type_ast: Int = if dlen > 1: data[1] else: -1
-    let val_expr: Int = if dlen > 2: data[2] else: -1
+    let is_mut: Int = if dlen > 1: data[1] else: 0
+    let type_ast: Int = if dlen > 2: data[2] else: -1
+    let val_expr: Int = if dlen > 3: data[3] else: -1
 
     // Infer the value expression type
     var inferred: ResolvedType = rt_unknown()
@@ -965,6 +973,8 @@ pub fn check_let_stmt(env: TypeEnv, node: AstNode, caller_eff: Int) -> TypeEnv:
                           node.span_start, node.span_end)
         inferred = annotated
 
+    if is_mut != 0:
+        inferred.ref_mut = true
     // Register variable
     e = define_var(e, "v_" + str(name_idx), inferred)
     return e

@@ -121,9 +121,14 @@ pub fn handler_compile_check(file_path: String) -> Int with IO:
     if source == "":
         println("[kainc] ERROR: cannot read file: " + file_path)
         return 1
-    // Bootstrap: skip typecheck (stub), delegate to external build
-    println("[kainc] check OK (bootstrap passthrough): " + file_path)
-    return 0
+    // Step 2: real frontend — lex + parse + typecheck in-process.
+    let session: DriverSession = driver_session_new()
+    let result: KcCheckResult = driver_session_check(session, source, file_path)
+    if result.success:
+        println("[kainc] check OK: " + file_path)
+        return 0
+    emit_diagnostics_to_stderr(result.diagnostics)
+    return 1
 
 pub fn handler_compile_codegen(file_path: String, target: String, profile: String) -> Int with IO:
     println("[kainc] compile codegen: " + file_path + " (target: " + target + ", profile: " + profile + ")")

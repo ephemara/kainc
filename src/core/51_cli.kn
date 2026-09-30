@@ -268,7 +268,7 @@ pub fn run_check(config: CliConfig) -> Int with IO:
             var fi: Int = 0
             while fi < len(files):
                 let f: String = files[fi]
-                let exit_code: Int = orch_check_cli(f)
+                let exit_code: Int = handler_compile_check(f)
                 file_count = file_count + 1
                 if exit_code == 0:
                     println("[kainc]   PASS: " + f)

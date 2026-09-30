@@ -147,7 +147,7 @@ pub fn driver_session_compile(session: DriverSession, source: String,
     // ── Phase 3: Typecheck ──
     r = emit_progress(r, PHASE_TYPECHECK)
     let env: TypeEnv = type_env_new()
-    let typed: TypedProgram = typecheck(env, prog_result.program)
+    let typed: TypedProgram = typecheck(env, prog_result.program, prog_result.state.string_table.strings)
     if kc_diag_bag_has_errors(typed.errors):
         return compile_result_error(typed.errors)
 
@@ -181,12 +181,14 @@ pub fn driver_session_check(session: DriverSession, source: String,
 
     let parser_state: ParserState = parser_new(tokens, r.file_path, r.source)
     let prog_result: ProgResult = parse(parser_state)
-    if kc_diag_bag_has_errors(prog_result.state.errors):
+    // NOTE: passing the threaded error bag by value miscompiles here
+    // (segfault); direct len check is equivalent and safe.
+    if len(prog_result.state.errors.errors) > 0:
         return KcCheckResult { success: false, diagnostics: prog_result.state.errors }
 
     let env: TypeEnv = type_env_new()
-    let typed: TypedProgram = typecheck(env, prog_result.program)
-    if kc_diag_bag_has_errors(typed.errors):
+    let typed: TypedProgram = typecheck(env, prog_result.program, prog_result.state.string_table.strings)
+    if len(typed.errors.errors) > 0:
         return KcCheckResult { success: false, diagnostics: typed.errors }
 
     return KcCheckResult { success: true, diagnostics: kc_diag_bag_new() }

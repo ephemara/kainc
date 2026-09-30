@@ -1,0 +1,13 @@
+stage	prefix	files	role
+00-shared	00_	token, span, ast, error, builtins, effects	Atoms every later stage consumes: token kinds, spans, AST tags + node, diagnostics, builtin types, effect lattice. No pipeline logic.
+10-lex	10_	lexer	Characters -> tokens. DFA + indent processor (INDENT/DEDENT synthesis). Depends only on 00.
+20-parse	20_	parser	Tokens -> AST program. Pratt expressions, items, blocks. Depends on 00 + 10.
+30-check	30_, 31_	types, monomorphize	L0 typecheck (4 passes) + generic instantiation skeleton. L1-L7 construct stubs live in 60_*. Depends on 00 + 20.
+40-codegen	40_, 41_, 42_	codegen, llvm_ffi, runtime	Textual LLVM IR emitter + LLVM-C decls + runtime declare table. Depends on 00 + 30.
+50-cli	50_–56_	main, cli, compiler, orchestrator, shared, registry, builtin_handlers	Driver: argv -> check/build/run/test dispatch. compiler.kn owns the DriverSession pipeline. Depends on everything above.
+60-layers	60_–66_	L1_state … L7_systems	One file per semantic construct family (worlds, laws, converge, stages, temporal, stones, systems). Mostly check-stubs today; the growth surface for L1-L7.
+70-jit	70_–74_	jit, jit_cache, jit_metal, jit_orc, jit_x86	`run` backends (x86 direct + OrcJIT paths). Only reachable via `run`.
+80-repl	80_–87_	command, evaluation, highlight, metadata, session, source, terminal, theme	Interactive REPL. Loop currently stubbed; cli uses metadata/terminal constructors only.
+90-backend	90_	GpuBackend	GPU type scaffold. Deferred.
+tests	—	L5_test, L6_test, good.kn, bad.kn	NOT in the binary. Run via `kain test`; good/bad are check fixtures.
+attic	—	build.kn, llvm_stub_types.kn, *.toml	Retired: old build authority (superseded by amalgamation), fully-shadowed LLVM stubs, unread command-registry data.

@@ -1,0 +1,3 @@
+pub fn main() -> Int with IO:
+    let x: Int = "hello"
+    return x

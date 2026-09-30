@@ -53,20 +53,31 @@ pub fn lexer_new(source: String, file_path: String) -> LexerState:
 // CHARACTER CLASSIFICATION HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Byte code of a single-char string. String relational comparison
+// (>=, <=) miscompiles at runtime in this snapshot, so classification
+// runs on byte codes with Int comparison (TurboKain idiom).
+pub fn lexer_byte(c: String) -> Int:
+    return text_byte_at(text_from(c), 0)
+
 pub fn lexer_is_digit(c: String) -> Bool:
-    return c >= "0" and c <= "9"
+    let b: Int = lexer_byte(c)
+    return b >= 48 and b <= 57
 
 pub fn lexer_is_hex_digit(c: String) -> Bool:
-    return lexer_is_digit(c) or (c >= "a" and c <= "f") or (c >= "A" and c <= "F")
+    let b: Int = lexer_byte(c)
+    return (b >= 48 and b <= 57) or (b >= 97 and b <= 102) or (b >= 65 and b <= 70)
 
 pub fn lexer_is_oct_digit(c: String) -> Bool:
-    return c >= "0" and c <= "7"
+    let b: Int = lexer_byte(c)
+    return b >= 48 and b <= 55
 
 pub fn lexer_is_bin_digit(c: String) -> Bool:
-    return c == "0" or c == "1"
+    let b: Int = lexer_byte(c)
+    return b == 48 or b == 49
 
 pub fn lexer_is_alpha(c: String) -> Bool:
-    return (c >= "a" and c <= "z") or (c >= "A" and c <= "Z")
+    let b: Int = lexer_byte(c)
+    return (b >= 97 and b <= 122) or (b >= 65 and b <= 90)
 
 pub fn lexer_is_alnum(c: String) -> Bool:
     return lexer_is_alpha(c) or lexer_is_digit(c)
@@ -292,15 +303,16 @@ pub fn lexer_lex_char(state: LexerState, start_line: Int, start_col: Int, start_
 
 // ── Numeric Literal Helpers ──
 
-// Convert ASCII digit char to integer (0-9)
+// Convert ASCII digit char to integer (0-9). Byte arithmetic: '0' is 48.
 pub fn lexer_char_to_val(c: String) -> Int:
-    return c as Int
+    return lexer_byte(c) - 48
 
 // Convert hex digit char to integer value
 pub fn lexer_hex_digit_val(c: String) -> Int:
-    if c >= "0" and c <= "9": return lexer_char_to_val(c)
-    if c >= "a" and c <= "f": return 10 + (lexer_char_to_val(c) - lexer_char_to_val("a"))
-    if c >= "A" and c <= "F": return 10 + (lexer_char_to_val(c) - lexer_char_to_val("A"))
+    let b: Int = lexer_byte(c)
+    if b >= 48 and b <= 57: return b - 48
+    if b >= 97 and b <= 102: return 10 + (b - 97)
+    if b >= 65 and b <= 70: return 10 + (b - 65)
     return 0
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -668,6 +680,11 @@ pub fn lexer_next_token(state: LexerState) -> TokenResult:
 pub fn lexer_tokenize_all(source: String, file_path: String) -> Array<Token>:
     let mut cur: LexerState = lexer_new(source, file_path)
     let mut out_tokens: Array<Token> = []
+    // Stuck failsafe: the old 'pos >= len' break dropped the EOF token,
+    // leaving the parser on an unterminated stream (infinite loop).
+    // Now we only break on EOF, with a progress guard that synthesizes
+    // EOF so downstream always terminates.
+    var guard: Int = 0
     loop:
         let tr: TokenResult = lexer_next_token(cur)
         cur = tr.state
@@ -678,9 +695,14 @@ pub fn lexer_tokenize_all(source: String, file_path: String) -> Array<Token>:
             push(out_tokens, tok)
         if is_eof:
             break
-        if cur.pos >= len(source):
+        guard = guard + 1
+        if guard > len(source) * 2 + 16:
+            push(out_tokens, token_new(TOKEN_EOF, "", cur.line_no, cur.col_no, cur.pos))
             break
-    return out_tokens
+    // Post-lexer pass: synthesize INDENT/DEDENT from NEWLINE whitespace.
+    // Without this the parser never sees block structure (body_idx -1,
+    // statements leak to top level, nothing is ever typechecked).
+    return indent_process(out_tokens)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INDENT PROCESSOR — post-lexer pass
